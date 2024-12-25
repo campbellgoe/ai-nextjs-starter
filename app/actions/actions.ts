@@ -5,7 +5,7 @@ import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
 import { z } from 'zod';
 
-export async function generate(input: string) {
+export async function generateLesson(input: string) {
   'use server';
 
   const stream = createStreamableValue();
@@ -13,7 +13,7 @@ export async function generate(input: string) {
   (async () => {
     const { partialObjectStream } = streamObject({
       model: openai('gpt-4o'),
-      system: 'You generate three lessons for an education app to learn languages, spoken or programming languages.',
+      system: 'You generate lessons for an education app to learn languages, spoken or programming languages.',
       prompt: input,
       schema: z.object({
         lesson: z.object({
