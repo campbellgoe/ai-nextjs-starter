@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,9 +11,17 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 export const maxDuration = 30;
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5});
+  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
-
+  useEffect(() => {
+    if(messages.length === 0){
+      const messagesLocal = localStorage.getItem("messages.")
+      setMessages(JSON.parse(messagesLocal || '[]'))
+    }
+    return () => {
+      localStorage.setItem("messages.", JSON.stringify(messages))
+    }
+  }, [messages])
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
@@ -22,11 +30,12 @@ export default function Chat() {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[60vh] pr-4">
+            <pre>{JSON.stringify(messages, null, 2)}</pre>
             {messages.map(m => (
               <Card key={m.id} className="mb-4">
                 <CardHeader className="py-2">
                   <CardTitle className="text-sm font-medium">
-                    {m.role.charAt(0).toUpperCase() + m.role.slice(1)}
+                    {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -44,7 +53,7 @@ export default function Chat() {
                     <p className="truncate">{m.content}</p>
                   )}
                 </CardContent>
-               {m.content.length > 60 && <CardFooter>
+               {m.content?.length > 60 && <CardFooter>
                   <Button 
                     variant="outline" 
                     size="sm"
