@@ -15,11 +15,13 @@ export default function Chat() {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
     if(messages.length === 0){
-      const messagesLocal = localStorage.getItem("messages.")
-      setMessages(JSON.parse(messagesLocal || '[]'))
+      const messagesLocal = localStorage.getItem("messages.") || ''
+      setMessages(JSON.parse(messagesLocal ))
     }
     return () => {
-      localStorage.setItem("messages.", JSON.stringify(messages))
+      if(messages.length > 0){
+        localStorage.setItem("messages.", JSON.stringify(messages))
+      }
     }
   }, [messages])
   return (
@@ -30,7 +32,7 @@ export default function Chat() {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[60vh] pr-4">
-            <pre>{JSON.stringify(messages, null, 2)}</pre>
+            {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
             {messages.map(m => (
               <Card key={m.id} className="mb-4">
                 <CardHeader className="py-2">

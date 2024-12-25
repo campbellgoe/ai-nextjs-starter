@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { generateLesson } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,24 @@ export default function Chat() {
   const [input, setInput] = useState('')
   const [generation, setGeneration] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-
+useEffect(() => {
+      if(!isGenerating){
+        const generationLocal = localStorage.getItem("generation.") || ''
+        try {
+          const data = JSON.parse(generationLocal)
+          if(data){
+            setGeneration(data)
+          }
+        } catch(err){
+          console.warn("Couldn't parse local lesson generation", err)
+        }
+      }
+      return () => {
+        if(!isGenerating){
+          localStorage.setItem("generation.", JSON.stringify(generation))
+        }
+      }
+  }, [isGenerating])
   const handleGenerate = async () => {
     setIsGenerating(true);
     console.log('stream object with input', input)
