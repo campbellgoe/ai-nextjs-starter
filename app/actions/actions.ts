@@ -23,9 +23,9 @@ export async function generateLesson(input: string) {
           helpInfo: z.string().describe('Helpful info about the topic to make the learners life easier.'),
           challenges: z.array(z.object({
             challenge: z.string().describe('The question or challenge.'),
-            helpInfo: z.string().describe('Helpful info about the challenge, a hint.'),
+            helpInfo: z.string().describe('Helpful info to help them resolve all aspects of the problem to fix the code problem.'),
             level: z.enum(["beginner", "intermediate", "advanced"]),
-            code: z.array(z.object({ solution: z.string(), questionStarter: z.string() })),
+            code: z.array(z.object({ solution: z.string().describe("The code solution in the language"), questionStarter: z.string().describe("The code without the full answer in the language") })),
           }))
         }),
       })

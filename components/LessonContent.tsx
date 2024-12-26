@@ -7,6 +7,7 @@ import { highlight as prismaHighlight, languages } from 'prismjs/components/pris
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/themes/prism.css'; //Example style, you can use another
+import confetti from 'canvas-confetti'
 interface Challenge {
   challenge: string;
   helpInfo: string;
@@ -39,7 +40,41 @@ const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ 
   useEffect(() => {
     if(showSolution){
       if(yourAttemptCode === solution){
-        alert("*Confetti falls* - your solutions match!")
+        const count = 200;
+        const defaults = {
+          origin: { y: 0.7 }
+        };
+
+        function fire(particleRatio, opts) {
+        confetti({
+          ...defaults,
+          ...opts,
+          particleCount: Math.floor(count * particleRatio)
+        });
+      }
+
+      fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+      });
+      fire(0.2, {
+        spread: 60,
+      });
+      fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2
+      });
+      fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+      });
       }
     }
   }, [showSolution, yourAttemptCode, solution])
