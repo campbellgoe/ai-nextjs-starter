@@ -7,7 +7,8 @@ import { z } from 'zod';
 
 export async function generateLesson(input: string) {
   'use server';
-
+  let topic = 'unknown'
+  let language = 'unknown'
   const stream = createStreamableValue();
 
   (async () => {
@@ -32,10 +33,16 @@ export async function generateLesson(input: string) {
 
     for await (const partialObject of partialObjectStream) {
       stream.update(partialObject);
+      if(partialObject.lesson?.topic){
+        topic = partialObject.lesson.topic
+      }
+      if(partialObject.lesson?.language){
+        language = partialObject.lesson.language
+      }
     }
 
     stream.done();
   })();
 
-  return { data: stream.value };
+  return { topic, language, data: stream.value };
 }

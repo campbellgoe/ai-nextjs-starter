@@ -48,7 +48,6 @@ export default function Chat() {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    const { topic, language } = parseInput(input);
     const { data } = await generateLesson(input);
 
     for await (const partialObject of readStreamableValue(data)) {
@@ -56,22 +55,22 @@ export default function Chat() {
         const newLesson = partialObject.lesson;
         setLessons(prevLessons => {
           const updatedLessons = new Map(prevLessons);
-          updatedLessons.set(`${topic}-${language}`, newLesson);
+          updatedLessons.set(input, newLesson);
           return updatedLessons;
         });
-        setSelectedLesson(`${topic}-${language}`);
+        setSelectedLesson(input);
       }
     }
     setIsGenerating(false);
   };
 
-  const parseInput = (input: string): { topic: string; language: string } => {
-    const parts = input.split(' in ');
-    return {
-      topic: parts[0].trim(),
-      language: parts[1]?.trim() || 'Unknown'
-    };
-  };
+  // const parseInput = (input: string): { topic: string; language: string } => {
+  //   const parts = input.split(' in ');
+  //   return {
+  //     topic: parts[0].trim(),
+  //     language: parts[1]?.trim() || 'Unknown'
+  //   };
+  // };
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -110,7 +109,7 @@ export default function Chat() {
               </Select>
             </div>
           )}
-          <Card className="bg-gray-50 overflow-auto max-h-[calc(100vh-300px)]">
+          <Card className="bg-gray-50 overflow-auto min-h-[225px] max-h-[90vh]">
             <CardContent>
               {selectedLesson && lessons.has(selectedLesson) ? (
                 <LessonContent lessonData={lessons.get(selectedLesson)!} />
