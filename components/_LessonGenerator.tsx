@@ -104,7 +104,7 @@ export default function LessonGenerator() {
           {/* {lessonContent && (
             <div className="mt-4 w-full">
               <h2 className="text-xl font-bold mb-2">Generated Lesson:</h2>
-              <div className="bg-gray-100 p-4 rounded-md whitespace-pre-wrap">{lessonContent}</div>
+              <div className="bg-gray-100 p-4 rounded-md ">{lessonContent}</div>
             </div>
           )} */}
           {messages.map((m) => (

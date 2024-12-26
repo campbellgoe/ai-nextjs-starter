@@ -29,11 +29,11 @@ const ChallengeCard: React.FC<{ challenge: Challenge }> = ({ challenge }) => {
       </CardHeader>
       <CardContent>
         <p className="mb-2"><strong>Level:</strong> {challenge.level}</p>
-        <pre className="mb-2"><strong>Help:</strong> {challenge.helpInfo}</pre>
+        <p className="mb-2"><strong>Help:</strong> {challenge.helpInfo}</p>
         <details className="mt-4">
           <summary className="cursor-pointer font-semibold">Show Code</summary>
           <div className="mt-2 p-4 bg-gray-100 rounded">
-            <pre className="whitespace-pre-wrap">{challenge.code?.[0]?.questionStarter}</pre>
+            <pre className="whitespace-pre-wrap">{challenge?.code?.[0]?.questionStarter}</pre>
           </div>
         </details>
         <Button 
@@ -44,7 +44,7 @@ const ChallengeCard: React.FC<{ challenge: Challenge }> = ({ challenge }) => {
         </Button>
         {showSolution && (
           <div className="mt-2 p-4 bg-gray-100 rounded">
-            <pre className="whitespace-pre-wrap">{challenge.code?.[0]?.solution}</pre>
+            <pre className="whitespace-pre-wrap">{challenge?.code?.[0]?.solution}</pre>
           </div>
         )}
       </CardContent>
@@ -55,8 +55,8 @@ const ChallengeCard: React.FC<{ challenge: Challenge }> = ({ challenge }) => {
 export const LessonContent: React.FC<{ lessonData: LessonData }> = ({ lessonData }) => {
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">{lessonData?.topic} in {lessonData?.language}</h2>
-      <pre className="mb-6">{lessonData?.helpInfo}</pre>
+      <h2 className="text-2xl font-bold mb-4">{lessonData.topic} in {lessonData.language}</h2>
+      <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenges:</h3>
       {lessonData?.challenges?.map((challenge, index) => (
         <ChallengeCard key={index} challenge={challenge} />

@@ -7,43 +7,70 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { LessonContent } from '@/components/LessonContent';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+interface Lesson {
+  topic: string;
+  language: string;
+  helpInfo: string;
+  challenges: any[];
+}
+
 export default function Chat() {
   const [input, setInput] = useState('')
-  const [generation, setGeneration] = useState(null);
+  const [lessons, setLessons] = useState<Map<string, Lesson>>(new Map());
+  const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-useEffect(() => {
-      if(!isGenerating){
-        const generationLocal = localStorage.getItem("generation.") || ''
-        try {
-          const data = JSON.parse(generationLocal)
-          if(data){
-            setGeneration(data)
-          }
-        } catch(err){
-          console.warn("Couldn't parse local lesson generation", err)
-        }
+
+  useEffect(() => {
+    const storedLessons = localStorage.getItem("lessons");
+    if (storedLessons) {
+      try {
+        const parsedLessons = JSON.parse(storedLessons);
+        setLessons(new Map(parsedLessons));
+      } catch (err) {
+        console.warn("Couldn't parse stored lessons", err);
       }
-      return () => {
-        if(!isGenerating){
-          localStorage.setItem("generation.", JSON.stringify(generation))
-        }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isGenerating) {
+      const localLessons = Array.from(lessons.entries())
+      if(localLessons.length){
+        localStorage.setItem("lessons", JSON.stringify(localLessons));
       }
-  }, [isGenerating])
+    }
+  }, [lessons, isGenerating]);
+
   const handleGenerate = async () => {
     setIsGenerating(true);
-    console.log('stream object with input', input)
+    const { topic, language } = parseInput(input);
     const { data } = await generateLesson(input);
 
     for await (const partialObject of readStreamableValue(data)) {
-      if (partialObject) {
-        setGeneration(partialObject.lesson);
+      if (partialObject && partialObject.lesson) {
+        const newLesson = partialObject.lesson;
+        setLessons(prevLessons => {
+          const updatedLessons = new Map(prevLessons);
+          updatedLessons.set(`${topic}-${language}`, newLesson);
+          return updatedLessons;
+        });
+        setSelectedLesson(`${topic}-${language}`);
       }
     }
     setIsGenerating(false);
+  };
+
+  const parseInput = (input: string): { topic: string; language: string } => {
+    const parts = input.split(' in ');
+    return {
+      topic: parts[0].trim(),
+      language: parts[1]?.trim() || 'Unknown'
+    };
   };
 
   return (
@@ -53,32 +80,46 @@ useEffect(() => {
           <CardTitle className="text-2xl font-bold text-center">Lesson Generator</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
+          <div className="mb-6 flex space-x-4">
             <Input
-              className="w-full"
+              className="flex-grow"
               value={input}
               placeholder="E.g. For Loops in Python"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             />
+            <Button 
+              onClick={handleGenerate}
+              disabled={isGenerating || !input.trim()}
+            >
+              {isGenerating ? 'Generating...' : 'Generate Lesson'}
+            </Button>
           </div>
+          {lessons.size > 0 && (
+            <div className="mb-4">
+              <Select onValueChange={setSelectedLesson} value={selectedLesson || undefined}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a lesson" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(lessons.keys()).map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <Card className="bg-gray-50 overflow-auto max-h-[calc(100vh-300px)]">
             <CardContent>
-              {generation ? (
-                <LessonContent lessonData={generation} />
+              {selectedLesson && lessons.has(selectedLesson) ? (
+                <LessonContent lessonData={lessons.get(selectedLesson)!} />
               ) : (
-                <p>Generated lesson will appear here...</p>
+                <p>Select or generate a lesson to view its content.</p>
               )}
             </CardContent>
           </Card>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <Button 
-            onClick={handleGenerate}
-            disabled={isGenerating || !input.trim()}
-          >
-            {isGenerating ? 'Generating...' : 'Generate Lesson'}
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );

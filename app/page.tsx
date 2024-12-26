@@ -15,8 +15,11 @@ export default function Chat() {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
     if(messages.length === 0){
-      const messagesLocal = localStorage.getItem("messages.") || ''
-      setMessages(JSON.parse(messagesLocal ))
+      const messagesLocal = localStorage.getItem("messages.") || '[]'
+      const oldMessages = JSON.parse(messagesLocal)
+      if(oldMessages.length >= 1){
+        setMessages(oldMessages)
+      }
     }
     return () => {
       if(messages.length > 0){
@@ -28,10 +31,10 @@ export default function Chat() {
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">AI Chat Interface</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">AI Chat</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[60vh] pr-4">
+          <ScrollArea className="max-h-2/3">
             {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
             {messages.map(m => (
               <Card key={m.id} className="mb-4">
@@ -44,11 +47,11 @@ export default function Chat() {
                   {expandedMessage === m.id ? (
                     <div className="whitespace-pre-wrap">
                       {m.toolInvocations ? (
-                        <pre className="bg-gray-100 p-2 rounded overflow-x-auto">
+                        <pre className="bg-gray-100 p-2 rounded whitespace-break-spaces">
                           {JSON.stringify(m.toolInvocations, null, 2)}
                         </pre>
                       ) : (
-                        <p>{m.content}</p>
+                        <pre className="whitespace-break-spaces">{m.content}</pre>
                       )}
                     </div>
                   ) : (
@@ -66,7 +69,7 @@ export default function Chat() {
                 </CardFooter>}
               </Card>
             ))}
-          </ScrollArea>
+            </ScrollArea>
         </CardContent>
         <CardFooter>
           <form onSubmit={handleSubmit} className="w-full">
@@ -74,7 +77,7 @@ export default function Chat() {
               <Input
                 className="flex-grow"
                 value={input}
-                placeholder="E.g. For Loops in Python"
+                placeholder="Ask away!"
                 onChange={handleInputChange}
               />
               <Button type="submit">
