@@ -54,18 +54,18 @@ const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ 
         <div className="mt-2 p-4 bg-gray-100 rounded">
           <pre><code dangerouslySetInnerHTML={{ __html: codeStarterHTML }} /></pre>
         </div>
-       {language && <>
+       <>
        <label>Type your answer below:</label>
        <Editor
           value={yourAttemptCode}
           onValueChange={(code: string) => setYourCode(code)}
-          highlight={(code: string) => prismaHighlight(code, language in languages ? languages[language] : languages.js)}
+          highlight={(code: string) => code ?prismaHighlight(code, language in languages ? languages[language] : languages.js) : null}
           padding={10}
           style={{
             fontFamily: '"Fira code", "Fira Mono", monospace',
             fontSize: 12,
           }}
-        /></>}
+        /></>
         <Button 
           onClick={() => setShowSolution(!showSolution)} 
           className="mt-4"
