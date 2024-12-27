@@ -13,7 +13,7 @@ export default function Navigation() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               {/* You can add a logo here */}
-              <span className="text-2xl font-bold text-primary">Learn Anything</span>
+              <span className="text-2xl font-bold text-primary">Learn with AI</span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <NavLink href="/" active={pathname === "/"}>

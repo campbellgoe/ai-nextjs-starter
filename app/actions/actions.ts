@@ -21,7 +21,11 @@ const paramsGenerateLessonWithChallenges = (prompt: string) => ({
         code: z.array(z.object({ solution: z.string().describe("The code solution in the language"), questionStarter: z.string().describe("Commented incomplete code without the full answer in the language") })),
       }))
     }),
-  })
+  }),
+  onFinish({ usage }: any) {
+    console.log('Token usage:', usage);
+    
+  },
 })
 // acceptable prompts include the question or challenge, the hint info, the example correct code, and the user code in a single string of characters
 const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string) => ({

@@ -151,7 +151,7 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
               <pre><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
               <label>Feedback:</label>
               {isGeneratingCorrectness ? 'Generating feedback...' : null}
-              <pre>{feedback?.feedback}</pre>
+              <p>{feedback?.feedback}</p>
             </div>
           )}
         </>}

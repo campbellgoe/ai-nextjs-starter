@@ -1,15 +1,24 @@
 'use client';
 
 import { useChat } from 'ai/react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-
+import dynamic from 'next/dynamic';
+// This is the only place InitializedMDXEditor is imported directly.
+const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
+  // Make sure we turn SSR off
+  ssr: false
+})
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
+// This is what is imported by other components. Pre-initialized with plugins, and ready
+// to accept other props, including a ref.
 
+
+// TS complains without the following line
+MyMdx.displayName = 'MyMDX'
 export default function Chat() {
   const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
@@ -50,11 +59,15 @@ export default function Chat() {
                           {JSON.stringify(m.toolInvocations, null, 2)}
                         </pre>
                       ) : (
-                        <pre className="whitespace-break-spaces">{m.content}</pre>
+                        <Suspense fallback={<pre>{m.content}</pre>}>
+                          <MyMdx
+                            markdown={m.content}
+                          />
+                        </Suspense>
                       )}
                     </div>
                   ) : (
-                    <p className="truncate">{m.content}</p>
+                    <p className="truncate">{m.content.slice(0, 300)}</p>
                   )}
                 </CardContent>
                {m.content?.length > 60 && <CardFooter>
