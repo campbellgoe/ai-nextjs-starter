@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { generateLesson } from '@/app/actions/actions';
+import { generateLesson, generateCorrectness } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,8 +17,29 @@ interface Lesson {
   language: string;
   helpInfo: string;
   challenges: any[];
+  timestamp: number;
 }
-
+const languages = [['JavaScript', 'javascript', 'js'],
+['Python', 'python', 'py'],
+['Java', 'java'],
+['C++', 'cpp'],
+['C#', 'csharp'],
+['PHP', 'php'],
+['TypeScript', 'ts'],
+['Rust', 'rust', 'rs'],
+['Go', 'go'],
+['Swift', 'swift'],
+['Kotlin', 'kotlin'],
+['Ruby', 'ruby'],
+['SQL', 'sql'],
+['Dart', 'dart'],
+['Shell scripting (Bash, PowerShell)', 'bash'],
+['Lua', 'lua'],
+['Haskell', 'haskell'],
+['R', 'r'],
+['MATLAB', 'matlab'],
+['Assembly (common architectures like x86/x64)', 'assembly', 'wasm'],
+]
 export default function Chat() {
   const [input, setInput] = useState('')
   const [lessons, setLessons] = useState<Map<string, Lesson>>(new Map());
@@ -30,7 +51,9 @@ export default function Chat() {
     if (storedLessons) {
       try {
         const parsedLessons = JSON.parse(storedLessons);
-        setLessons(new Map(parsedLessons));
+        if(parsedLessons.length) {
+          setLessons(new Map(parsedLessons));
+        }
       } catch (err) {
         console.warn("Couldn't parse stored lessons", err);
       }
@@ -39,20 +62,17 @@ export default function Chat() {
 
   useEffect(() => {
     if (!isGenerating) {
-      const localLessons = Array.from(lessons.entries())
-      if(localLessons.length){
-        localStorage.setItem("lessons", JSON.stringify(localLessons));
-      }
+      localStorage.setItem("lessons", JSON.stringify(Array.from(lessons.entries())));
     }
   }, [lessons, isGenerating]);
 
-  const handleGenerate = async () => {
+  const handleGenerateLesson = async () => {
     setIsGenerating(true);
     const { data } = await generateLesson(input);
 
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.lesson) {
-        const newLesson = partialObject.lesson;
+        const newLesson = { ...partialObject.lesson, timestamp: partialObject.timestamp || partialObject.lesson?.timestamp || Date.now() };
         setLessons(prevLessons => {
           const updatedLessons = new Map(prevLessons);
           updatedLessons.set(input, newLesson);
@@ -64,19 +84,12 @@ export default function Chat() {
     setIsGenerating(false);
   };
 
-  // const parseInput = (input: string): { topic: string; language: string } => {
-  //   const parts = input.split(' in ');
-  //   return {
-  //     topic: parts[0].trim(),
-  //     language: parts[1]?.trim() || 'Unknown'
-  //   };
-  // };
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Lesson Generator</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Challenge Generator</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex space-x-4">
@@ -87,10 +100,10 @@ export default function Chat() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             />
             <Button 
-              onClick={handleGenerate}
+              onClick={handleGenerateLesson}
               disabled={isGenerating || !input.trim()}
             >
-              {isGenerating ? 'Generating...' : 'Generate Lesson'}
+              {isGenerating ? 'Generating...' : 'Generate Challenges'}
             </Button>
           </div>
           {lessons.size > 0 && (
@@ -99,22 +112,24 @@ export default function Chat() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select a lesson" />
                 </SelectTrigger>
-                <SelectContent>
-                  {Array.from(lessons.keys()).map((key) => (
-                    <SelectItem key={key} value={key}>
-                      {key}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[300px] overflow-y-auto">
+                  {Array.from(lessons.entries())
+                    .sort((a, b) => b[1].timestamp - a[1].timestamp)
+                    .map(([key, lesson]) => (
+                      <SelectItem key={key} value={key}>
+                        {key}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
           )}
-          <Card className="bg-gray-50 overflow-auto min-h-[225px] max-h-[90vh]">
+          <Card className="bg-gray-50">
             <CardContent>
               {selectedLesson && lessons.has(selectedLesson) ? (
                 <LessonContent lessonData={lessons.get(selectedLesson)!} />
               ) : (
-                <p>Select or generate a lesson to view its content.</p>
+                <p>Select or type a prompt and click generate to view its content.</p>
               )}
             </CardContent>
           </Card>
@@ -123,4 +138,3 @@ export default function Chat() {
     </div>
   );
 }
-

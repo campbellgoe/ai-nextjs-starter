@@ -33,8 +33,7 @@ export default function Chat() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">AI Chat</CardTitle>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="max-h-2/3">
+        <CardContent> 
             {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
             {messages.map(m => (
               <Card key={m.id} className="mb-4">
@@ -69,13 +68,12 @@ export default function Chat() {
                 </CardFooter>}
               </Card>
             ))}
-            </ScrollArea>
         </CardContent>
-        <CardFooter>
-          <form onSubmit={handleSubmit} className="w-full">
+        <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
+          <form onSubmit={handleSubmit} className="w-full p-2">
             <div className="flex space-x-2">
               <Input
-                className="flex-grow"
+                className="flex-grow bg-white"
                 value={input}
                 placeholder="Ask away!"
                 onChange={handleInputChange}

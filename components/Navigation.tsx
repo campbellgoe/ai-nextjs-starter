@@ -13,14 +13,14 @@ export default function Navigation() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               {/* You can add a logo here */}
-              <span className="text-2xl font-bold text-primary">Logo</span>
+              <span className="text-2xl font-bold text-primary">Learn Anything</span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <NavLink href="/" active={pathname === "/"}>
                 Chat
               </NavLink>
               <NavLink href="/lessons" active={pathname === "/lessons"}>
-                Lessons
+                Challenges
               </NavLink>
             </div>
           </div>
@@ -40,7 +40,7 @@ export default function Navigation() {
             Chat
           </MobileNavLink>
           <MobileNavLink href="/lessons" active={pathname === "/lessons"}>
-            Lessons
+            Challenges
           </MobileNavLink>
         </div>
       </div>
