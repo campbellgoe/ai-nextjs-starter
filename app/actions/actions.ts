@@ -6,7 +6,7 @@ import { createStreamableValue } from 'ai/rsc';
 import { z } from 'zod';
 const paramsGenerateLessonWithChallenges = (prompt: string) => ({
   model: openai('gpt-4o'),
-  system: 'You generate *lessons* for an education app to learn what they want, if it\'s for a programming language you can set code challenges.',
+  system: 'You generate *lessons* for an education app to learn what they want, if it\'s for a programming language you can set code challenges. Make sure to leave code questionStarter empty or with incomplete code so the user can fill it out.',
   prompt,
   schema: z.object({
     lesson: z.object({
