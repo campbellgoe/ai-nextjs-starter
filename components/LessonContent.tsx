@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
@@ -28,7 +28,8 @@ interface LessonData {
 }
 
 const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ challenge, language }) => {
-  const [showSolution, setShowSolution] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
   const [correctness, setCorrectness] = useState<Map<string, any>>(new Map());
   const solution = challenge?.code?.[0]?.solution
@@ -47,14 +48,16 @@ Hint:
 ${challenge.helpInfo}
 Our solution:
 ${solution}`
-const feedback = correctness.get(promptForCorrectnessFeedback)
+  const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
 
   useEffect(() => {
-    setYourCode(questionStarter)
+    setYourCode(questionStarter === solution ? '' : questionStarter)
   }, [questionStarter])
+  const [nTries, setNTries] = useState(0)
   useEffect(() => {
-    if (showSolution && !isGeneratingCorrectness) {
-      if(feedback?.correct) {
+    if (showFeedback && !isGeneratingCorrectness) {
+      setNTries(ntries => ntries + 1)
+      if (correctnessFeedback?.correct) {
         const count = 200;
         const defaults = {
           origin: { y: 0.7 }
@@ -90,10 +93,12 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
           spread: 120,
           startVelocity: 45,
         });
+      } else {
+        
       }
     }
-  }, [showSolution, yourAttemptCode, solution, isGeneratingCorrectness])
- 
+  }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness])
+
   const handleGenerateCorrectness = async (input: string) => {
     setIsGeneratingCorrectness(true);
     const { data } = await generateCorrectness(input);
@@ -110,7 +115,7 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
     }
     setIsGeneratingCorrectness(false);
   };
-  
+
   return (
     <Card className="mt-4">
       <CardHeader>
@@ -121,11 +126,12 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
         <p className="mb-2"><strong>Help:</strong> {challenge.helpInfo}</p>
 
         {isCode && <div className="mt-2 p-4 bg-gray-100 rounded">
-          <pre><code dangerouslySetInnerHTML={{ __html: codeStarterHTML }} /></pre>
+          <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeStarterHTML }} /></pre>
         </div>}
         {isCode && <>
-          <label>Type your answer below:</label>
+          <label>Type your solution below:</label>
           <Editor
+            placeholder="solution goes here"
             value={yourAttemptCode}
             onValueChange={(code: string) => setYourCode(code)}
             highlight={(code: string) => code ? prismaHighlight(code, !!language && language in languages ? languages[language] : languages.js) : null}
@@ -139,19 +145,30 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
             onClick={() => {
               handleGenerateCorrectness(promptForCorrectnessFeedback)
 
-              setShowSolution(!showSolution)
+              setShowFeedback(!showFeedback)
             }}
             className="mt-4"
           >
-            {showSolution ? 'Hide Solution' : 'Show Solution'}
+            {showFeedback ? 'Hide Feedback' : 'Check answer'}
           </Button>
-          {showSolution && (
+          {showFeedback && (
             <div className="mt-2 p-4 bg-gray-100 rounded">
-              <label>Our solution:</label>
-              <pre><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
               <label>Feedback:</label>
-              {isGeneratingCorrectness ? 'Generating feedback...' : null}
-              <p>{feedback?.feedback}</p>
+              {isGeneratingCorrectness ? 'Generating Feedback...' : null}
+              <p>{correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.'}</p>
+              <p>{correctnessFeedback?.correctnessFeedback}</p>
+              {nTries >= 2 && <Button
+                onClick={() => {
+                  setShowSolution(showSolution => !showSolution)
+                }}
+                className="mt-4"
+              >
+                {showSolution ? 'Hide Solution' : 'See Solution'}
+              </Button>}
+              {showSolution && <div>
+                <label>Our solution:</label>
+                <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
+              </div>}
             </div>
           )}
         </>}
