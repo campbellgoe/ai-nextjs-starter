@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { generateLesson, generateCorrectness } from '@/app/actions/actions';
+import { generateLesson } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,27 +19,6 @@ interface Lesson {
   challenges: any[];
   timestamp: number;
 }
-const languages = [['JavaScript', 'javascript', 'js'],
-['Python', 'python', 'py'],
-['Java', 'java'],
-['C++', 'cpp'],
-['C#', 'csharp'],
-['PHP', 'php'],
-['TypeScript', 'ts'],
-['Rust', 'rust', 'rs'],
-['Go', 'go'],
-['Swift', 'swift'],
-['Kotlin', 'kotlin'],
-['Ruby', 'ruby'],
-['SQL', 'sql'],
-['Dart', 'dart'],
-['Shell scripting (Bash, PowerShell)', 'bash'],
-['Lua', 'lua'],
-['Haskell', 'haskell'],
-['R', 'r'],
-['MATLAB', 'matlab'],
-['Assembly (common architectures like x86/x64)', 'assembly', 'wasm'],
-]
 export default function Chat() {
   const [input, setInput] = useState('')
   const [lessons, setLessons] = useState<Map<string, Lesson>>(new Map());

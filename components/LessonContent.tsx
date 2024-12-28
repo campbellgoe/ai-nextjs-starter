@@ -128,7 +128,7 @@ const feedback = correctness.get(promptForCorrectnessFeedback)
           <Editor
             value={yourAttemptCode}
             onValueChange={(code: string) => setYourCode(code)}
-            highlight={(code: string) => code ? prismaHighlight(code, language in languages ? languages[language] : languages.js) : null}
+            highlight={(code: string) => code ? prismaHighlight(code, !!language && language in languages ? languages[language] : languages.js) : null}
             padding={10}
             style={{
               fontFamily: '"Fira code", "Fira Mono", monospace',
@@ -167,7 +167,7 @@ export const LessonContent: React.FC<{ lessonData: LessonData }> = ({ lessonData
       <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenges:</h3>
       {lessonData?.challenges?.map((challenge, index) => (
-        <ChallengeCard key={index} challenge={challenge} language={lessonData.language.toLowerCase()} />
+        <ChallengeCard key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
     </div>
   );

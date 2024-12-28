@@ -1,7 +1,7 @@
 'use client';
 
-import { useChat } from 'ai/react';
-import { Suspense, useEffect, useState } from 'react';
+import { Message, useChat } from 'ai/react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,7 +12,7 @@ const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
   ssr: false
 })
 // Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+export const maxDuration = 60;
 // This is what is imported by other components. Pre-initialized with plugins, and ready
 // to accept other props, including a ref.
 
@@ -20,13 +20,19 @@ export const maxDuration = 30;
 // TS complains without the following line
 MyMdx.displayName = 'MyMDX'
 export default function Chat() {
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5});
+  const [generating, setGenerating] = useState(false)
+  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (message: Message, { usage, finishReason }) => {
+      setGenerating(false)
+  }});
+  const handleSubmitClient = (d: FormData) => {
+    if(input) setGenerating(true)
+  }
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
     if(messages.length === 0){
       const messagesLocal = localStorage.getItem("messages.") || '[]'
       const oldMessages = JSON.parse(messagesLocal)
-      if(oldMessages.length >= 1){
+      if(oldMessages.length){
         setMessages(oldMessages)
       }
     }
@@ -58,13 +64,12 @@ export default function Chat() {
                         <pre className="bg-gray-100 p-2 rounded whitespace-break-spaces">
                           {JSON.stringify(m.toolInvocations, null, 2)}
                         </pre>
-                      ) : (
+                      ) : null}
                         <Suspense fallback={<pre>{m.content}</pre>}>
-                          <MyMdx
+                          {!generating ? <MyMdx
                             markdown={m.content}
-                          />
+                          /> : <pre>{m.content}</pre>}
                         </Suspense>
-                      )}
                     </div>
                   ) : (
                     <p className="truncate">{m.content.slice(0, 300)}</p>
@@ -83,7 +88,10 @@ export default function Chat() {
             ))}
         </CardContent>
         <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
-          <form onSubmit={handleSubmit} className="w-full p-2">
+          <form onSubmit={(...args) => {
+            handleSubmit(...args)
+            handleSubmitClient(...args)
+          }} className="w-full p-2">
             <div className="flex space-x-2">
               <Input
                 className="flex-grow bg-white"
