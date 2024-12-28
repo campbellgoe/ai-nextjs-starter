@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
+// @ts-ignore
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -10,7 +11,9 @@ import 'prismjs/themes/prism.css'; //Example style, you can use another
 import confetti from 'canvas-confetti'
 import { generateCorrectness } from "@/app/actions/actions";
 import { readStreamableValue } from "ai/rsc";
-interface Challenge {
+import { Label } from "./ui/label";
+// import { slugify } from "@/lib/utils";
+export interface Challenge {
   challenge: string;
   helpInfo: string;
   level: string;
@@ -27,7 +30,7 @@ interface LessonData {
   challenges: Challenge[];
 }
 
-const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ challenge, language }) => {
+const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: string; }> = ({ challenge, language, input }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
@@ -39,6 +42,7 @@ const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ 
   const [yourAttemptCode, setYourCode] = useState(
     questionStarter
   );
+  const [showYourAttempt, setShowYourAttempt] = useState(true)
   const isCode = (codeStarterHTML && codeSolutionHTML)
   const promptForCorrectnessFeedback = `User attempt code:
 ${yourAttemptCode}
@@ -49,11 +53,29 @@ ${challenge.helpInfo}
 Our solution:
 ${solution}`
   const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
-
+const maxTries = 2
+const localCodeKey = useMemo(() => "code.userAttempt."+input,[input]) 
   useEffect(() => {
-    setYourCode(questionStarter === solution ? '' : questionStarter)
-  }, [questionStarter])
+    
+    let storedCode = ''
+    try {
+      storedCode = localStorage.getItem(localCodeKey) || ''
+      console.log('stored code', localCodeKey, storedCode)
+    } catch(err){
+
+    }
+    if(storedCode){
+      setYourCode(storedCode)
+    } else {
+      setYourCode(questionStarter === solution ? '' : questionStarter)
+    }
+  }, [localCodeKey, questionStarter])
   const [nTries, setNTries] = useState(0)
+  useEffect(() => {
+    if(nTries >= maxTries && showSolution && !correctnessFeedback?.correct){
+      setShowYourAttempt(false)
+    }
+  }, [nTries, maxTries, showSolution, correctnessFeedback])
   useEffect(() => {
     if (showFeedback && !isGeneratingCorrectness) {
       setNTries(ntries => ntries + 1)
@@ -115,7 +137,10 @@ ${solution}`
     }
     setIsGeneratingCorrectness(false);
   };
-
+  
+  useEffect(() => {
+    localStorage.setItem(localCodeKey, yourAttemptCode)
+  }, [localCodeKey, yourAttemptCode])
   return (
     <Card className="mt-4">
       <CardHeader>
@@ -129,35 +154,41 @@ ${solution}`
           <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeStarterHTML }} /></pre>
         </div>}
         {isCode && <>
-          <label>Type your solution below:</label>
-          <Editor
-            placeholder="solution goes here"
-            value={yourAttemptCode}
-            onValueChange={(code: string) => setYourCode(code)}
-            highlight={(code: string) => code ? prismaHighlight(code, !!language && language in languages ? languages[language] : languages.js) : null}
-            padding={10}
-            style={{
-              fontFamily: '"Fira code", "Fira Mono", monospace',
-              fontSize: 12,
-            }}
-          />
-          <Button
-            onClick={() => {
-              handleGenerateCorrectness(promptForCorrectnessFeedback)
+          {showYourAttempt && <>
+            <Label htmlFor="code-solution">Type your solution below:</Label>
+            <Editor
+              id="code-solution"
+              placeholder="solution goes here"
+              value={yourAttemptCode}
+              onValueChange={(code: string) => {
+                setYourCode(code)
+                localStorage.setItem(localCodeKey, code)
+              }}
+              highlight={(code: string) => code ? prismaHighlight(code, !!language && language in languages ? languages[language] : languages.js) : null}
+              padding={10}
+              style={{
+                fontFamily: '"Fira code", "Fira Mono", monospace',
+                fontSize: 12,
+              }}
+            />
+            <Button
+              onClick={() => {
+                handleGenerateCorrectness(promptForCorrectnessFeedback)
 
-              setShowFeedback(!showFeedback)
-            }}
-            className="mt-4"
-          >
-            {showFeedback ? 'Hide Feedback' : 'Check answer'}
-          </Button>
+                setShowFeedback(!showFeedback)
+              }}
+              className="mt-4"
+            >
+              {showFeedback ? correctnessFeedback?.correct ? 'Close feedback' : 'Try again' : 'Check answer'}
+            </Button>
+          </>}
           {showFeedback && (
             <div className="mt-2 p-4 bg-gray-100 rounded">
               <label>Feedback:</label>
               {isGeneratingCorrectness ? 'Generating Feedback...' : null}
-              <p>{correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.'}</p>
-              <p>{correctnessFeedback?.correctnessFeedback}</p>
-              {nTries >= 2 && <Button
+              <p>{!correctnessFeedback?.feedback && (correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.')}</p>
+              <p>{correctnessFeedback?.feedback}</p>
+              {nTries >= maxTries && <Button
                 onClick={() => {
                   setShowSolution(showSolution => !showSolution)
                 }}
@@ -165,7 +196,7 @@ ${solution}`
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {showSolution && <div>
+              {(showSolution || correctnessFeedback?.correct )&& <div>
                 <label>Our solution:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
               </div>}
@@ -177,15 +208,20 @@ ${solution}`
   );
 };
 
-export const LessonContent: React.FC<{ lessonData: LessonData }> = ({ lessonData }) => {
+export const LessonContent: React.FC<{ input: string, lessonData: LessonData, generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonData, generateMoreChallenges , input }) => {
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">{lessonData.topic} in {lessonData.language}</h2>
+      <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
       <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenges:</h3>
       {lessonData?.challenges?.map((challenge, index) => (
-        <ChallengeCard key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
+        <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
+      {/* <Button onClick={() => {
+        generateMoreChallenges(lessonData?.challenges)
+      }}>
+        Generate more challenges
+      </Button> */}
     </div>
   );
 };

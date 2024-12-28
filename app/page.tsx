@@ -1,7 +1,7 @@
 'use client';
 
 import { Message, useChat } from 'ai/react';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,9 +24,6 @@ export default function Chat() {
   const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (message: Message, { usage, finishReason }) => {
       setGenerating(false)
   }});
-  const handleSubmitClient = (d: FormData) => {
-    if(input) setGenerating(true)
-  }
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
     if(messages.length === 0){
@@ -88,9 +85,9 @@ export default function Chat() {
             ))}
         </CardContent>
         <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
-          <form onSubmit={(...args) => {
-            handleSubmit(...args)
-            handleSubmitClient(...args)
+          <form onSubmit={(fe: FormEvent<HTMLFormElement>) => {
+            handleSubmit(fe)
+            if(input) setGenerating(true)
           }} className="w-full p-2">
             <div className="flex space-x-2">
               <Input
