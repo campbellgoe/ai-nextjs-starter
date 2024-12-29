@@ -139,7 +139,9 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
   };
   
   useEffect(() => {
-    localStorage.setItem(localCodeKey, yourAttemptCode)
+    if(yourAttemptCode){
+      localStorage.setItem(localCodeKey, yourAttemptCode)
+    }
   }, [localCodeKey, yourAttemptCode])
   return (
     <Card className="mt-4">
