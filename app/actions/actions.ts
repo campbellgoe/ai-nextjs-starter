@@ -8,10 +8,11 @@ const models = {
   'gpt-4o-mini': openai('gpt-4o-mini'),
   'gpt-4o': openai('gpt-4o'),
 }
-const paramsGenerateLessonWithChallenges = (prompt: string) => ({
+const paramsGenerateLessonWithChallenges = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'], // was gpt-4o but mini should be cheaper for now
   system: 'You generate *lessons* for an education app to learn what they want, if it\'s for a programming language you can set code challenges. Make sure to leave code questionStarter empty or with incomplete code so the user can fill it out.',
   prompt,
+  temperature,
   schema: z.object({
     lesson: z.object({
       timestamp: z.string().describe('The timestamp of the lesson'),
@@ -20,9 +21,18 @@ const paramsGenerateLessonWithChallenges = (prompt: string) => ({
       helpInfo: z.string().describe('Helpful info about the topic to make the learners life easier.'),
       challenges: z.array(z.object({
         challenge: z.string().describe('The question or challenge.'),
-        helpInfo: z.string().describe('Helpful info to help them resolve all aspects of the problem to fix the code problem.'),
+        helpInfo: z.string().describe('Helpful info which explains everything they might be missing to help them resolve all aspects of the problem to fix the code problem. Can be in mdx format.'),
         level: z.enum(["beginner", "intermediate", "advanced"]),
-        code: z.array(z.object({ solution: z.string().describe("The code solution in the language"), questionStarter: z.string().describe("Commented incomplete code without the full answer in the language") })),
+        codeExamplesIncomplete: z.object({
+          problem: z.string().describe("Commented incomplete or incorrect code for the user to fix."),
+          additionalCode: z.string().describe("Any optional additional code."),
+          helpInfo: z.string().describe('Helpful info about the problem code.'),
+        }).describe("The incomplete code for the user to fix."),
+        codeComplete: z.object({
+          solution: z.string().describe("The code solution in the language."),
+          additionalCode: z.string().describe("Any optional additional code."),
+          helpInfo: z.string().describe('Helpful info about gpts solution.'),
+        })
       }))
     }),
   }),
@@ -96,7 +106,7 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
 export async function generatePlaceholder(input: string | undefined) {
   const { text } = await generateText({
     model: models['gpt-4o-mini'],
-    temperature: 0.75,
+    temperature: 0.7,
     messages: [
       { role: 'system', content: 'You genarate placeholder text for a prompt. Generate a short, specific topic that would be interesting to learn about. Your response should be 5-10 words long.' },
       { role: 'user', content: 'I want to learn and be challenged, what would make a good challenge? '+(input || '') }
