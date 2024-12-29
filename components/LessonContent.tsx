@@ -52,7 +52,7 @@ const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: s
   const codeProblemExtraHTML = problemExtra ? highlight(problemExtra) : ''
   const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
   const [yourAttemptCode, setYourCode] = useState(
-    problem
+    ''
   );
   const isCode = (codeProblemHTML && codeSolutionHTML)
   const promptForCorrectnessFeedback = `User attempt code:
