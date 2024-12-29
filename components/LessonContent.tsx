@@ -17,10 +17,16 @@ export interface Challenge {
   challenge: string;
   helpInfo: string;
   level: string;
-  code: {
+  codeComplete: {
     solution: string;
-    questionStarter: string;
-  }[];
+    additionalCode: string;
+    helpInfo: string;
+  }
+  codeExamplesIncomplete: {
+    problem: string;
+    additionalCode: string;
+    helpInfo: string;
+  }
 }
 
 interface LessonData {
@@ -35,15 +41,20 @@ const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: s
   const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
   const [correctness, setCorrectness] = useState<Map<string, any>>(new Map());
-  const solution = challenge?.code?.[0]?.solution
-  const questionStarter = challenge?.code?.[0]?.questionStarter
-  const codeStarterHTML = questionStarter ? highlight(questionStarter) : ''
+
+          
+  const solution = challenge?.codeComplete?.solution
+  const problem = challenge?.codeExamplesIncomplete?.problem
+  const solutionExtra = challenge?.codeComplete?.additionalCode
+  const problemExtra = challenge?.codeExamplesIncomplete?.additionalCode
+  const codeProblemHTML = problem ? highlight(problem) : ''
   const codeSolutionHTML = solution ? highlight(solution) : ''
+  const codeProblemExtraHTML = problemExtra ? highlight(problemExtra) : ''
+  const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
   const [yourAttemptCode, setYourCode] = useState(
-    questionStarter
+    problem
   );
-  const [showYourAttempt, setShowYourAttempt] = useState(true)
-  const isCode = (codeStarterHTML && codeSolutionHTML)
+  const isCode = (codeProblemHTML && codeSolutionHTML)
   const promptForCorrectnessFeedback = `User attempt code:
 ${yourAttemptCode}
 Challenge/Question:
@@ -67,15 +78,11 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
     if(storedCode){
       setYourCode(storedCode)
     } else {
-      setYourCode(questionStarter === solution ? '' : questionStarter)
+      setYourCode(problem === solution ? '' : problem)
     }
-  }, [localCodeKey, questionStarter])
+  }, [localCodeKey, problem])
   const [nTries, setNTries] = useState(0)
-  useEffect(() => {
-    if(nTries >= maxTries && showSolution && !correctnessFeedback?.correct){
-      setShowYourAttempt(false)
-    }
-  }, [nTries, maxTries, showSolution, correctnessFeedback])
+
   useEffect(() => {
     if (showFeedback && !isGeneratingCorrectness) {
       setNTries(ntries => ntries + 1)
@@ -152,11 +159,16 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
         <p className="mb-2"><strong>Level:</strong> {challenge.level}</p>
         <p className="mb-2"><strong>Help:</strong> {challenge.helpInfo}</p>
 
-        {isCode && <div className="mt-2 p-4 bg-gray-100 rounded">
-          <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeStarterHTML }} /></pre>
-        </div>}
+        {isCode && <><strong>Fix this code:</strong><div className="mt-2 p-4 bg-gray-100 rounded">
+          <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeProblemHTML }} /></pre>
+          <details>
+            <summary>Additional code</summary>
+            <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeProblemExtraHTML }} /></pre>
+          </details>
+        </div>
+        </>}
         {isCode && <>
-          {showYourAttempt && <>
+          <>
             <Label htmlFor="code-solution">Type your solution below:</Label>
             <Editor
               id="code-solution"
@@ -164,7 +176,6 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
               value={yourAttemptCode}
               onValueChange={(code: string) => {
                 setYourCode(code)
-                localStorage.setItem(localCodeKey, code)
               }}
               highlight={(code: string) => code ? prismaHighlight(code, !!language && language in languages ? languages[language] : languages.js) : null}
               padding={10}
@@ -183,14 +194,14 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
             >
               {showFeedback ? correctnessFeedback?.correct ? 'Close feedback' : 'Try again' : 'Check answer'}
             </Button>
-          </>}
+          </>
           {showFeedback && (
             <div className="mt-2 p-4 bg-gray-100 rounded">
               <label>Feedback:</label>
               {isGeneratingCorrectness ? 'Generating Feedback...' : null}
               <p>{!correctnessFeedback?.feedback && (correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.')}</p>
               <p>{correctnessFeedback?.feedback}</p>
-              {nTries >= maxTries && <Button
+              {!correctnessFeedback?.correct && nTries >= maxTries && <Button
                 onClick={() => {
                   setShowSolution(showSolution => !showSolution)
                 }}
@@ -201,6 +212,8 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
               {(showSolution || correctnessFeedback?.correct )&& <div>
                 <label>Our solution:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
+                <label>Additional code:</label>
+                <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionExtraHTML }} /></pre>
               </div>}
             </div>
           )}
