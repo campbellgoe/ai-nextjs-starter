@@ -51,6 +51,7 @@ const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: s
   const codeSolutionHTML = solution ? highlight(solution) : ''
   const codeProblemExtraHTML = problemExtra ? highlight(problemExtra) : ''
   const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
+  const [challengeHelpInfoUser, challengeHelpInfoSolution] = [challenge?.codeExamplesIncomplete?.helpInfo, challenge?.codeComplete?.helpInfo]
   const [yourAttemptCode, setYourCode] = useState(
     ''
   );
@@ -61,8 +62,7 @@ Challenge/Question:
 ${challenge.challenge}
 Hint:
 ${challenge.helpInfo}
-Our solution:
-${solution}`
+`
   const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
 const maxTries = 2
 const localCodeKey = useMemo(() => "code.userAttempt."+input,[input]) 
@@ -75,12 +75,12 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
     } catch(err){
 
     }
-    if(storedCode){
+    if(!!storedCode){
       setYourCode(storedCode)
     } else {
       setYourCode(problem === solution ? '' : problem)
     }
-  }, [localCodeKey, problem])
+  }, [localCodeKey, problem, solution])
   const [nTries, setNTries] = useState(0)
 
   useEffect(() => {
@@ -161,10 +161,10 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
 
         {isCode && <><strong>Fix this code:</strong><div className="mt-2 p-4 bg-gray-100 rounded">
           <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeProblemHTML }} /></pre>
-          <details>
+          {!!codeProblemExtraHTML && <details>
             <summary>Additional code</summary>
             <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeProblemExtraHTML }} /></pre>
-          </details>
+          </details>}
         </div>
         </>}
         {isCode && <>
@@ -210,10 +210,12 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
               {(showSolution || correctnessFeedback?.correct )&& <div>
-                <label>Our solution:</label>
+                <label>GPTs solution:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
                 <label>Additional code:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionExtraHTML }} /></pre>
+                <details><summary>Extra info:</summary><div>{challengeHelpInfoUser}</div>
+                <div>{challengeHelpInfoSolution}</div></details>
               </div>}
             </div>
           )}

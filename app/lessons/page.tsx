@@ -99,10 +99,18 @@ export default function Chat() {
             <Label htmlFor="topic">What topic do you want to learn?</Label>
             <div className="flex flex-row">
               <DiceButton onClick={() => {
-                generatePlaceholder(input).then(val => {
-                  setPlaceholder(val)
-                  setInput(val)
-                })
+                 try {
+                  const messagesLocal = localStorage.getItem("messages.") || '[]'
+                
+                  const chatMessages = JSON.parse(messagesLocal)
+
+                  generatePlaceholder(input, Array.isArray(chatMessages) ? chatMessages : []).then(val => {
+                    setPlaceholder(val)
+                    setInput(val)
+                  })
+              } catch(err){
+                console.warn(err)
+              }
               }} />
               <Input
                 id="topic"
