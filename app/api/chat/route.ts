@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { streamText } from 'ai';
 // import { z } from 'zod';
 
 // Allow streaming responses up to 30 seconds
@@ -10,8 +10,9 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: openai('gpt-4o'),
+    system: 'You are a helpful assistant.',
     messages,
-    tools: {
+    //tools: {
     //   weather: tool({
     //     description: 'Get the weather in a location (fahrenheit)',
     //     parameters: z.object({
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     //     },
     //   }),
     // },
-    }
+    //}
   });
 
   return result.toDataStreamResponse();

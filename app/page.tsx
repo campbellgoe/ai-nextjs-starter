@@ -57,16 +57,11 @@ export default function Chat() {
                 <CardContent>
                   {expandedMessage === m.id ? (
                     <div className="whitespace-pre-wrap">
-                      {m.toolInvocations ? (
-                        <pre className="bg-gray-100 p-2 rounded whitespace-break-spaces">
-                          {JSON.stringify(m.toolInvocations, null, 2)}
-                        </pre>
-                      ) : null}
-                        <Suspense fallback={<pre>{m.content}</pre>}>
-                          {!generating ? <MyMdx
-                            markdown={m.content}
-                          /> : <pre>{m.content}</pre>}
-                        </Suspense>
+                      <Suspense fallback={<pre>{m.content}</pre>}>
+                        {!generating ? <MyMdx
+                          markdown={m.content}
+                        /> : <pre>{m.content}</pre>}
+                      </Suspense>
                     </div>
                   ) : (
                     <p className="truncate">{m.content.slice(0, 300)}</p>
@@ -85,10 +80,7 @@ export default function Chat() {
             ))}
         </CardContent>
         <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
-          <form onSubmit={(fe: FormEvent<HTMLFormElement>) => {
-            handleSubmit(fe)
-            if(input) setGenerating(true)
-          }} className="w-full p-2">
+          <form onSubmit={handleSubmit} className="w-full p-2">
             <div className="flex space-x-2">
               <Input
                 className="flex-grow bg-white"
@@ -96,7 +88,9 @@ export default function Chat() {
                 placeholder="Ask away!"
                 onChange={handleInputChange}
               />
-              <Button type="submit">
+              <Button type="submit" onClick={() => {
+                if(input) setGenerating(true)
+              }}>
                 Ask
               </Button>
             </div>
