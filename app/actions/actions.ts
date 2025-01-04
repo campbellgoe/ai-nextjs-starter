@@ -8,13 +8,13 @@ const models = {
   'gpt-4o-mini': openai('gpt-4o-mini'),
   'gpt-4o': openai('gpt-4o'),
 }
-const paramsGenerateLessonWithChallenges = (prompt: string, temperature: number = 0.7) => ({
+const paramsGenerateLessonsWithChallenges = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'], // was gpt-4o but mini should be cheaper for now
-  system: 'You generate *lessons* for an education app to learn what they want, if it\'s for a programming language you can set code challenges. Make sure to leave code questionStarter empty or with incomplete code so the user can fill it out.',
+  system: 'You generate *lessons* and *challenges* for an education app to learn what they want, you can set (code using specific programming languages or simply in a spoken language as a challenge) challenges. Make sure to leave code questionStarter empty or with incomplete code so the user can fill it out.',
   prompt,
   temperature,
   schema: z.object({
-    lesson: z.object({
+    lessons: z.array(z.object({
       timestamp: z.string().describe('The timestamp of the lesson'),
       topic: z.string().describe('The topic for the lesson'),
       language: z.string().describe('The language e.g. code or spoken language.'),
@@ -34,7 +34,7 @@ const paramsGenerateLessonWithChallenges = (prompt: string, temperature: number 
           helpInfo: z.string().describe('Helpful info about gpts solution.'),
         })
       }))
-    }),
+    })),
   }),
   onFinish({ usage }: any) {
     console.log('Token usage:', usage);
@@ -44,7 +44,7 @@ const paramsGenerateLessonWithChallenges = (prompt: string, temperature: number 
 // acceptable prompts include the question or challenge, the hint info, the example correct code, and the user code in a single string of characters
 const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'],// was gpt-4o but mini should be cheaper for now
-  system: 'You generate *correctness* feedback for the user code and the question, hint info, and the example correct code. Acceptable answers must solve the problem posed in the question/challenge and alternatives to the solution may be allowed. You provide the correct answer and the feedback on the users code. Example feedback could be "Correct, you provided an alternative solution." or "Incorrect, but you are close." or Correct! Our solutions match!" or "Incorrect, hint:...". Good feedback is concise and to the point and helps the user understand what they did wrong and how to fix it.',
+  system: 'You generate *correctness* feedback for the user code and the question, hint info, and the example correct code. Acceptable answers must solve the problem posed in the question/challenge and alternatives to the solution may be allowed. You provide the correct answer and the feedback on the users code. Example feedback could be "Correct, you provided an alternative solution." or "Incorrect, but you are close." or Correct! Our solutions match!" or "Incorrect, hint:...". or "Correct! Close enough!". Good feedback is concise and to the point and helps the user understand what they did wrong and how to fix it.',
   prompt,
   temperature,
   schema: z.object({
@@ -53,10 +53,11 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
       confidence: z.number().describe('The confidence level of the correctness feedback.'),
       feedback: z.string().describe('The feedback on the users code.'),
       correctAnswerCode: z.string().describe('The correct answer code in the language.'),
+      expPointsWon: z.number().describe('number of experience points the player won as a result of getting it correct')
     })
   })
 })
-export async function generateLesson(input: string, temperature: number = 0.7) {
+export async function generateLessons(input: string, temperature: number = 0.7) {
   'use server';
   // let topic = 'unknown'
   // let language = 'unknown'
@@ -67,7 +68,7 @@ export async function generateLesson(input: string, temperature: number = 0.7) {
   const stream = createStreamableValue();
 
   (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateLessonWithChallenges(input, temperature));
+    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(input, temperature));
 
     for await (const partialObject of partialObjectStream) {
       stream.update(partialObject);
