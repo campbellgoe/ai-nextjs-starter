@@ -103,12 +103,13 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
 }
 
 
-export async function generatePlaceholder(input: string | undefined) {
+export async function generatePlaceholder(input: string | undefined, messages?: any[]) {
   const { text } = await generateText({
     model: models['gpt-4o-mini'],
     temperature: 0.7,
     messages: [
-      { role: 'system', content: 'You genarate placeholder text for a prompt. Generate a short, specific topic that would be interesting to learn about. Your response should be 5-10 words long.' },
+      ...(messages || []),
+      { role: 'system', content: 'You genarate placeholder text for a prompt input. Generate a short, specific topic that would be interesting to learn about. Your response should be 5-10 words long. Use the programming language in the prompt e.g. {topic} in {language} (if given a coding topic or langauge)' },
       { role: 'user', content: 'I want to learn and be challenged, what would make a good challenge? '+(input || '') }
     ],
   });
