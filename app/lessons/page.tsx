@@ -1,18 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { generateLesson, generatePlaceholder } from '@/app/actions/actions';
+import { generateLessons, generatePlaceholder } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Challenge, LessonContent } from '@/components/LessonContent';
+import { Challenge, LessonsContent } from '@/components/LessonsContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+// Allow streaming responses up to 45 seconds
+export const maxDuration = 45;
 
 interface Lesson {
   topic: string;
@@ -23,13 +23,13 @@ interface Lesson {
 }
 export default function Chat() {
   const [input, setInput] = useState('')
-  const [lessons, setLessons] = useState<Map<string, Lesson>>(new Map());
-  const [selectedLesson, setSelectedLesson] = useState<string | null>(null);
+  const [lessons, setLessons] = useState<Map<string, Lesson[]>>(new Map());
+  const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptPlaceholder, setPlaceholder] = useState('Type any topic you want to learn')
   useEffect(() => {
-    if(selectedLesson) setInput(selectedLesson)
-  }, [selectedLesson])
+    if(selectedLessons) setInput(selectedLessons)
+  }, [selectedLessons])
   useEffect(() => {
     const storedLessons = localStorage.getItem("lessons");
     if (storedLessons) {
@@ -51,19 +51,20 @@ export default function Chat() {
     }
   }, [lessons, isGenerating]);
 
-  const handleGenerateLesson = async () => {
+  const handleGenerateLessons = async () => {
     setIsGenerating(true);
-    const { data } = await generateLesson(input);
+    const { data } = await generateLessons(input);
 
     for await (const partialObject of readStreamableValue(data)) {
-      if (partialObject && partialObject.lesson) {
-        const newLesson = { ...partialObject.lesson, timestamp: partialObject.timestamp || partialObject.lesson?.timestamp || Date.now() };
+      if (partialObject && partialObject.lessons) {
+        const lessonsData = lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') || [] : []
+        const newLessons = [...lessonsData, ...partialObject.lessons]
         setLessons(prevLessons => {
           const updatedLessons = new Map(prevLessons);
-          updatedLessons.set(input, newLesson);
+          updatedLessons.set(input, newLessons);
           return updatedLessons;
         });
-        setSelectedLesson(input);
+        setSelectedLessons(input);
       }
     }
     setIsGenerating(false);
@@ -71,7 +72,7 @@ export default function Chat() {
   const handleGenerateMoreLessons = async (prompt: string = "") => {
     setIsGenerating(true)
     const lessonKey = input+'\n'+prompt
-    const { data } = await generateLesson(lessonKey, 0.75)
+    const { data } = await generateLessons(lessonKey, 0.75)
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.lesson) {
         const newLesson = partialObject.lesson
@@ -80,14 +81,14 @@ export default function Chat() {
           updatedLessons.set(lessonKey, newLesson);
           return updatedLessons;
         });
-        setSelectedLesson(input);
+        setSelectedLessons(input);
       }
     }
     setIsGenerating(false);
   }
   
 
-
+  const lessonsData = lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') : []
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
@@ -127,7 +128,7 @@ export default function Chat() {
               />
             </div>
             <Button 
-              onClick={handleGenerateLesson}
+              onClick={handleGenerateLessons}
               disabled={isGenerating || !input.trim()}
             >
               {isGenerating ? 'Generating...' : 'Generate Challenges'}
@@ -135,13 +136,12 @@ export default function Chat() {
           </div>
           {lessons.size > 0 && (
             <div className="mb-4">
-              <Select onValueChange={setSelectedLesson} value={selectedLesson || undefined}>
+              <Select onValueChange={setSelectedLessons} value={selectedLessons || undefined}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a previous prompt" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[40vh] overflow-y-auto">
                   {Array.from(lessons.entries())
-                    .sort((a, b) => b[1].timestamp - a[1].timestamp)
                     .map(([key, lesson]) => (
                       <SelectItem key={key} value={key}>
                         {key}
@@ -153,8 +153,8 @@ export default function Chat() {
           )}
           <Card className="bg-gray-50">
             <CardContent>
-              {selectedLesson && lessons.has(selectedLesson) ? (
-                <LessonContent input={input} lessonData={lessons.get(selectedLesson)!} generateMoreChallenges={(existingChallenges: Challenge[]) => {
+              {selectedLessons && lessonsData ? (
+                <LessonsContent input={input} lessonsData={lessonsData} generateMoreChallenges={(existingChallenges: Challenge[]) => {
                   const prompt = `Generate more challenges.`+Math.random()
 handleGenerateMoreLessons(prompt)
                 }} />

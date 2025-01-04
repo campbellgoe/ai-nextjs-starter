@@ -131,7 +131,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
   const handleGenerateCorrectness = async (input: string) => {
     setIsGeneratingCorrectness(true);
     const { data } = await generateCorrectness(input);
-
+    
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.correctness) {
         const newCorrectness = partialObject.correctness
@@ -209,6 +209,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
+              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points.</div> : null}
               {(showSolution || correctnessFeedback?.correct )&& <div>
                 <label>GPTs solution:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
@@ -217,6 +218,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
                 <details><summary>Extra info:</summary><div>{challengeHelpInfoUser}</div>
                 <div>{challengeHelpInfoSolution}</div></details>
               </div>}
+
             </div>
           )}
         </>}
@@ -225,13 +227,13 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
   );
 };
 
-export const LessonContent: React.FC<{ input: string, lessonData: LessonData, generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonData, generateMoreChallenges , input }) => {
-  return (
-    <div>
+export const LessonsContent: React.FC<{ input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input }) => {
+  return <>{(lessonsData?.map(lessonData => (
+    <div key={lessonData.topic}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
       <p className="mb-6">{lessonData.helpInfo}</p>
-      <h3 className="text-xl font-semibold mb-4">Challenges:</h3>
-      {lessonData?.challenges?.map((challenge, index) => (
+      <h3 className="text-xl font-semibold mb-4">Challenge</h3>
+      {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
         <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
       {/* <Button onClick={() => {
@@ -240,6 +242,6 @@ export const LessonContent: React.FC<{ input: string, lessonData: LessonData, ge
         Generate more challenges
       </Button> */}
     </div>
-  );
-};
+  )))}</>
+}
 
