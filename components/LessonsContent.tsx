@@ -228,7 +228,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
 };
 
 export const LessonsContent: React.FC<{ input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input }) => {
-  return <>{(lessonsData?.map(lessonData => (
+  return (lessonsData?.map(lessonData => (
     <div key={lessonData.topic}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
       <p className="mb-6">{lessonData.helpInfo}</p>
@@ -242,6 +242,6 @@ export const LessonsContent: React.FC<{ input: string, lessonsData: LessonData[]
         Generate more challenges
       </Button> */}
     </div>
-  )))}</>
+  )))
 }
 

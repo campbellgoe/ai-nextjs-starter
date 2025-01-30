@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
 // This is the only place InitializedMDXEditor is imported directly.
 const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
   // Make sure we turn SSR off
@@ -20,9 +21,11 @@ export const maxDuration = 60;
 // TS complains without the following line
 MyMdx.displayName = 'MyMDX'
 export default function Chat() {
+  const [usage, setUsage] = useState(0)
   const [generating, setGenerating] = useState(false)
   const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (message: Message, { usage, finishReason }) => {
       setGenerating(false)
+      setUsage(u => u + usage.totalTokens)
   }});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
@@ -47,8 +50,14 @@ export default function Chat() {
         </CardHeader>
         <CardContent> 
             {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
+        <div className="grid auto-rows-max grid-cols-12">
             {messages.map(m => (
-              <Card key={m.id} className="mb-4">
+              <Card key={m.id} className={cn("mb-4", {
+                "justify-self-start": m.role === 'user',
+                "justify-self-end col-start-4": m.role === 'assistant' && !(expandedMessage === m.id),
+                "max-w-full col-span-10": !(expandedMessage === m.id),
+                "col-span-12 col-start-2": expandedMessage === m.id
+              })}>
                 <CardHeader className="py-2">
                   <CardTitle className="text-sm font-medium">
                     {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)}
@@ -78,6 +87,7 @@ export default function Chat() {
                 </CardFooter>}
               </Card>
             ))}
+            </div>
         </CardContent>
         <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
           <form onSubmit={handleSubmit} className="w-full p-2">
