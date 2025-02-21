@@ -89,11 +89,11 @@ export default function Chat() {
             ))}
             </div>
         </CardContent>
-        <CardFooter className="fixed bottom-0 bg-[#cce3ff7d] backdrop-blur-sm rounded-tr-md">
+        <CardFooter className="sticky bottom-0 bg-[#cce3ff7d] backdrop-blur-sm ">
           <form onSubmit={handleSubmit} className="w-full p-2">
             <div className="flex space-x-2">
-              <Input
-                className="flex-grow bg-white"
+              <textarea
+                className="flex-grow bg-white resize-y w-full p-2"
                 value={input}
                 placeholder="Ask away!"
                 onChange={handleInputChange}
