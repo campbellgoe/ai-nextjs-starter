@@ -2,10 +2,13 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from "clsx"
+import { useState } from 'react';
+import { Input } from './ui/input';
+import { useAppContext } from '@/contexts/PersistentAppContext';
 
 export default function Navigation() {
   const pathname = usePathname()
-
+ const { logoTextValue, setLogoTextValue } = useAppContext()
   return (
     <nav className="bg-background shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,10 +16,15 @@ export default function Navigation() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               {/* You can add a logo here */}
-              <span className="text-2xl font-bold text-primary">Learn with AI</span>
+              <span className="text-2xl font-bold text-primary">
+                <Input className="h-[48px]" value={logoTextValue} onChange={(e: any) => setLogoTextValue(e.target.value)}/>
+              </span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <NavLink href="/" active={pathname === "/"}>
+                Home
+              </NavLink>
+              <NavLink href="/chat" active={pathname === "/chat"}>
                 Chat
               </NavLink>
               <NavLink href="/code-challenges" active={pathname === "/code-challenges"}>
@@ -37,6 +45,9 @@ export default function Navigation() {
       <div className="sm:hidden">
         <div className="pt-2 pb-3 space-y-1">
           <MobileNavLink href="/" active={pathname === "/"}>
+            Home
+          </MobileNavLink>
+          <MobileNavLink href="/chat" active={pathname === "/chat"}>
             Chat
           </MobileNavLink>
           <MobileNavLink href="/code-challenges" active={pathname === "/code-challenges"}>

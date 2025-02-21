@@ -1,6 +1,7 @@
 import Navigation from '@/components/Navigation'
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppProvider } from '@/contexts/PersistentAppContext'
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,10 +29,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navigation />
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          {children}
-        </main>
+        <AppProvider>
+          <Navigation />
+          <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            {children}
+          </main>
+        </AppProvider>
       </body>
     </html>
   );

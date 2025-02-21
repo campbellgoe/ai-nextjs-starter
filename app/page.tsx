@@ -1,110 +1,204 @@
 'use client';
 
-import { Message, useChat } from 'ai/react';
-import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import dynamic from 'next/dynamic';
-import { cn } from '@/lib/utils';
+import { useAppContext } from "@/contexts/PersistentAppContext";
+
+import { useParams } from 'next/navigation'
+import { useRef, useState, useEffect, Suspense } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAppContext } from '@/contexts/PersistentAppContext'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import NavBarMain from '@/components/NavBarMain'
+import dynamic from 'next/dynamic'
+import { forwardRef } from "react"
+
+import { Switch } from '@/components/ui/switch'
+import {
+  type MDXEditorMethods,
+  type MDXEditorProps
+} from '@mdxeditor/editor'
 // This is the only place InitializedMDXEditor is imported directly.
-const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
+const Editor = dynamic(() => import('@/components/InitializedMDXEditor'), {
   // Make sure we turn SSR off
   ssr: false
 })
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 60;
+
 // This is what is imported by other components. Pre-initialized with plugins, and ready
 // to accept other props, including a ref.
-
+// @ts-ignore
+const MyMDXEditor = forwardRef<MDXEditorMethods, MDXEditorProps>((props, ref) => <Editor {...props} editorRef={ref} />)
 
 // TS complains without the following line
-MyMdx.displayName = 'MyMDX'
+MyMDXEditor.displayName = 'MyMDXEditor'
+
 export default function Chat() {
-  const [usage, setUsage] = useState(0)
-  const [generating, setGenerating] = useState(false)
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (message: Message, { usage, finishReason }) => {
-      setGenerating(false)
-      setUsage(u => u + usage.totalTokens)
-  }});
-  const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
+
+  const { logoTextValue } = useAppContext()
+
+  const params = useParams<{ slug: string }>()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [content, setContent] = useState('')
+  const [authorId, setAuthorId] = useState('')
+  const [isPublished, setIsPublished] = useState(false)
+  const router = useRouter()
+  const { user } = useAppContext()
+  const { slug } = params
   useEffect(() => {
-    if(messages.length === 0){
-      const messagesLocal = localStorage.getItem("messages.") || '[]'
-      const oldMessages = JSON.parse(messagesLocal)
-      if(oldMessages.length){
-        setMessages(oldMessages)
+    // Fetch the course data when the component mounts
+    const fetchCourse = async () => {
+      const response = await fetch(`/api/course/${slug}`)
+      if (response.ok) {
+        const course = await response.json()
+        setTitle(course.title)
+        setDescription(course.description)
+        setCategory(course.category)
+        setContent(course.content)
+        setAuthorId(course.teacherId)
+        setIsPublished(course.isPublished || false)
+      } else {
+        console.error('Failed to fetch course')
+        // error
       }
     }
-    return () => {
-      if(messages.length > 0){
-        localStorage.setItem("messages.", JSON.stringify(messages))
+    fetchCourse()
+  }, [slug, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const courseData = {
+      title,
+      description,
+      category,
+      content,
+      teacherId: authorId,
+      authorName: user?.name || 'Unknown',
+      isPublished
+    }
+
+    const response = await fetch(`/api/course/${slug}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(courseData),
+    })
+
+    if (response.ok) {
+      router.push('/app/dashboard')
+    } else {
+      alert('Failed to update course')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (confirm('Are you sure you want to delete this course?')) {
+      const response = await fetch(`/api/course/${slug}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        router.push('/app/dashboard')
+      } else {
+        alert('Failed to delete course')
       }
     }
-  }, [messages])
+  }
+  const mdxEditorRef = useRef<MDXEditorMethods>(null)
+
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">AI Chat</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Welcome to {logoTextValue}</CardTitle>
         </CardHeader>
-        <CardContent> 
-            {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
-        <div className="grid auto-rows-max grid-cols-12">
-            {messages.map(m => (
-              <Card key={m.id} className={cn("mb-4", {
-                "justify-self-start": m.role === 'user',
-                "justify-self-end col-start-4": m.role === 'assistant' && !(expandedMessage === m.id),
-                "max-w-full col-span-10": !(expandedMessage === m.id),
-                "col-span-12 col-start-2": expandedMessage === m.id
-              })}>
-                <CardHeader className="py-2">
-                  <CardTitle className="text-sm font-medium">
-                    {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {expandedMessage === m.id ? (
-                    <div className="whitespace-pre-wrap">
-                      <Suspense fallback={<pre>{m.content}</pre>}>
-                        {!generating ? <MyMdx
-                          markdown={m.content}
-                        /> : <pre>{m.content}</pre>}
-                      </Suspense>
-                    </div>
-                  ) : (
-                    <p className="truncate">{m.content.slice(0, 300)}</p>
-                  )}
-                </CardContent>
-               {m.content?.length > 60 && <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setExpandedMessage(expandedMessage => expandedMessage === m.id ? null : m.id)}
-                  >
-                    {expandedMessage === m.id ? 'Collapse' : 'Expand'}
-                  </Button>
-                </CardFooter>}
-              </Card>
-            ))}
-            </div>
+        <CardContent>
+          <Card className="w-full max-w-2xl mx-auto">
+            {/* <CardHeader>
+              <CardTitle>Conversation about {messages[0].content}</CardTitle>
+            </CardHeader> */}
+            <CardContent>
+              {(typeof content == "string") && <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Title
+                  </label>
+                  <Input
+                    type="text"
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                    Category
+                  </label>
+                  <Input
+                    type="text"
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="content" className="block text-sm font-medium text-gray-700">
+                    Course Content (MDX)
+                  </label>
+                  <Textarea
+                    id="content"
+                    value={content}
+                    required
+                    onChange={(e: any) => {
+                      setContent(e.target.value)
+                      mdxEditorRef.current?.setMarkdown(e.target.value)
+                    }}
+                    rows={10}
+                  />
+                  <Suspense fallback={null}>
+                    <MyMDXEditor
+                      ref={mdxEditorRef}
+                      markdown={content}
+                      onChange={(e: string) => setContent(e)}
+                      contentEditableClassName="my-mdx-editor"
+                    />
+                  </Suspense>
+                </div>
+                <div>
+                  <label htmlFor="is-published" className="block text-sm font-medium tex-gray-700">
+                    Publish it?
+                  </label>
+                  <Switch checked={isPublished} onCheckedChange={(checked: boolean) => {
+                    setIsPublished(checked)
+                  }} />
+                </div>
+                <Button type="submit">Update Course</Button>
+                <Button type="button" onClick={handleDelete} className="ml-4 bg-red-600 hover:bg-red-700">
+                  Delete Course
+                </Button>
+              </form>}
+            </CardContent>
+          </Card>
         </CardContent>
-        <CardFooter className="sticky bottom-0 bg-[#cce3ff7d] backdrop-blur-sm ">
-          <form onSubmit={handleSubmit} className="w-full p-2">
-            <div className="flex space-x-2">
-              <textarea
-                className="flex-grow bg-white resize-y w-full p-2"
-                value={input}
-                placeholder="Ask away!"
-                onChange={handleInputChange}
-              />
-              <Button type="submit" onClick={() => {
-                if(input) setGenerating(true)
-              }}>
-                Ask
-              </Button>
-            </div>
-          </form>
+        <CardFooter className="">
+
         </CardFooter>
       </Card>
     </div>
