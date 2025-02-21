@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { generateLessons, generatePlaceholder } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,15 @@ interface Lesson {
   timestamp: number;
 }
 export default function Chat() {
+  const [messages, setMessages] = useState<[]>([])
+  const messagesLocal = useMemo(() =>localStorage.getItem("messages.") || '[]', [])
+      const oldMessages = useMemo(() => {
+        try {
+          return JSON.parse(messagesLocal)
+        } catch(err){
+          return []
+        }
+      }, [messagesLocal])
   const [input, setInput] = useState('')
   const [lessons, setLessons] = useState<Map<string, Lesson[]>>(new Map());
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
@@ -42,8 +51,19 @@ export default function Chat() {
         console.warn("Couldn't parse stored lessons", err);
       }
     }
+
     // generatePlaceholder('').then(setPlaceholder)
   }, []);
+  const isUser = (message: any) => message.role === 'user'
+  useEffect(() => {
+    if(oldMessages.length && messages.length < oldMessages.length){
+      setMessages(oldMessages)
+      if(oldMessages[oldMessages.length - 1].content.length){
+        setPlaceholder(oldMessages.findLast(isUser)?.content || '')
+        console.log(oldMessages.findLast(isUser))
+      }
+    }
+  }, [oldMessages])
 
   useEffect(() => {
     if (!isGenerating) {

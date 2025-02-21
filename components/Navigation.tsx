@@ -19,7 +19,7 @@ export default function Navigation() {
               <NavLink href="/" active={pathname === "/"}>
                 Chat
               </NavLink>
-              <NavLink href="/lessons" active={pathname === "/lessons"}>
+              <NavLink href="/code-challenges" active={pathname === "/code-challenges"}>
                 Challenges
               </NavLink>
             </div>
@@ -39,7 +39,7 @@ export default function Navigation() {
           <MobileNavLink href="/" active={pathname === "/"}>
             Chat
           </MobileNavLink>
-          <MobileNavLink href="/lessons" active={pathname === "/lessons"}>
+          <MobileNavLink href="/code-challenges" active={pathname === "/code-challenges"}>
             Challenges
           </MobileNavLink>
         </div>

@@ -7,6 +7,7 @@ import { z } from 'zod';
 const models = {
   'gpt-4o-mini': openai('gpt-4o-mini'),
   'gpt-4o': openai('gpt-4o'),
+  'gpt-o1': openai('gpt-o1'),
 }
 const paramsGenerateLessonsWithChallenges = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'], // was gpt-4o but mini should be cheaper for now
@@ -55,6 +56,16 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
       correctAnswerCode: z.string().describe('The correct answer code in the language.'),
       expPointsWon: z.number().describe('number of experience points the player won as a result of getting it correct')
     })
+  })
+})
+const paramsGenVertsTris = (prompt: string, temperature: number = 0.7) => ({
+  model: models['gpt-o1'],// was gpt-4o but mini should be cheaper for now
+  system: 'You generate *vertices* and *triangles* for a 3D model. The vertices are points in 3D space and the triangles are the faces of the 3D model. The vertices and triangles must form a valid 3D model.',
+  prompt,
+  temperature,
+  schema: z.object({
+    vertices: z.array(z.number()).describe('The vertices of the 3D model. Each vertex is a 3D point with x, y, and z coordinates.'),
+    triangles: z.array(z.number()).describe('The triangles of the 3D model. Each triangle is a set of 3 vertices that form a face of the 3D model.'),
   })
 })
 export async function generateLessons(input: string, temperature: number = 0.7) {
