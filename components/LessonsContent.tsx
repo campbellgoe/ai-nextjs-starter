@@ -30,6 +30,7 @@ export interface Challenge {
 }
 
 interface LessonData {
+  Key: string;
   topic: string;
   language: string;
   helpInfo: string;
@@ -135,8 +136,9 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.correctness) {
         const newCorrectness = partialObject.correctness
-        setCorrectness(prevCorrectness => {
-          const updatedCorrectness = new Map(prevCorrectness);
+        setCorrectness(() => {
+          const updatedCorrectness = new Map();
+
           updatedCorrectness.set(input, newCorrectness);
           return updatedCorrectness;
         });
@@ -227,20 +229,27 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
   );
 };
 
-export const LessonsContent: React.FC<{ input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input }) => {
+export const LessonsContent: React.FC<{ removeLesson: (lessonKey: string) => void, input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, removeLesson, generateMoreChallenges , input }) => {
   return (lessonsData?.map(lessonData => (
-    <div key={lessonData.topic}>
+    <div key={lessonData.Key}>
+      <Button onClick={() => {
+        removeLesson(lessonData.Key)
+      }}
+      >Delete</Button>
+      <details><summary>View raw JSON</summary>
+      <pre className="w-full whitespace-pre-wrap">{JSON.stringify(lessonData, null, 2)}</pre>
+      </details>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
       <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>
       {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
         <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
-      {/* <Button onClick={() => {
+      <Button onClick={() => {
         generateMoreChallenges(lessonData?.challenges)
       }}>
         Generate more challenges
-      </Button> */}
+      </Button>
     </div>
   )))
 }

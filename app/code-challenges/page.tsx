@@ -15,36 +15,37 @@ import { DiceButton } from '@/components/dice-button';
 export const maxDuration = 45;
 
 interface Lesson {
-  topic: string;
-  language: string;
-  helpInfo: string;
-  challenges: any[];
-  timestamp: number;
+  Key: string;
+  topic?: string;
+  language?: string;
+  helpInfo?: string;
+  challenges?: any[];
+  timestamp?: number;
 }
 export default function Chat() {
   const [messages, setMessages] = useState<[]>([])
-  const messagesLocal = useMemo(() =>localStorage.getItem("messages.") || '[]', [])
-      const oldMessages = useMemo(() => {
-        try {
-          return JSON.parse(messagesLocal)
-        } catch(err){
-          return []
-        }
-      }, [messagesLocal])
+  const messagesLocal = useMemo(() => localStorage.getItem("messages.") || '[]', [])
+  const oldMessages = useMemo(() => {
+    try {
+      return JSON.parse(messagesLocal)
+    } catch (err) {
+      return []
+    }
+  }, [messagesLocal])
   const [input, setInput] = useState('')
   const [lessons, setLessons] = useState<Map<string, Lesson[]>>(new Map());
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptPlaceholder, setPlaceholder] = useState('Type any topic you want to learn')
   useEffect(() => {
-    if(selectedLessons) setInput(selectedLessons)
+    if (selectedLessons) setInput(selectedLessons)
   }, [selectedLessons])
   useEffect(() => {
     const storedLessons = localStorage.getItem("lessons");
     if (storedLessons) {
       try {
         const parsedLessons = JSON.parse(storedLessons);
-        if(parsedLessons.length) {
+        if (parsedLessons.length) {
           setLessons(new Map(parsedLessons));
         }
       } catch (err) {
@@ -56,9 +57,9 @@ export default function Chat() {
   }, []);
   const isUser = (message: any) => message.role === 'user'
   useEffect(() => {
-    if(oldMessages.length && messages.length < oldMessages.length){
+    if (oldMessages.length && messages.length < oldMessages.length) {
       setMessages(oldMessages)
-      if(oldMessages[oldMessages.length - 1].content.length){
+      if (oldMessages[oldMessages.length - 1].content.length) {
         setPlaceholder(oldMessages.findLast(isUser)?.content || '')
         console.log(oldMessages.findLast(isUser))
       }
@@ -77,11 +78,13 @@ export default function Chat() {
 
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.lessons) {
+
         const lessonsData = lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') || [] : []
-        const newLessons = [...lessonsData, ...partialObject.lessons]
+        const lessonKeys = new Set([...lessonsData, ...partialObject.lessons].map(a => a.topic))
+        const newLessons: Lesson[] = [...lessonsData, ...partialObject.lessons]
         setLessons(prevLessons => {
           const updatedLessons = new Map(prevLessons);
-          updatedLessons.set(input, newLessons);
+          updatedLessons.set(input, Array.from(lessonKeys).map((lessonKey: string) => ({ ...newLessons.find(a => a.topic === lessonKey) || {}, Key: input || '' })));
           return updatedLessons;
         });
         setSelectedLessons(input);
@@ -91,14 +94,14 @@ export default function Chat() {
   };
   const handleGenerateMoreLessons = async (prompt: string = "") => {
     setIsGenerating(true)
-    const lessonKey = input+'\n'+prompt
-    const { data } = await generateLessons(lessonKey, 0.75)
+    const lessonKey = input + '\n' + prompt
+    const { data } = await generateLessons(lessonKey, 0.7)
     for await (const partialObject of readStreamableValue(data)) {
       if (partialObject && partialObject.lesson) {
         const newLesson = partialObject.lesson
         setLessons(prevLessons => {
           const updatedLessons = new Map(prevLessons);
-          updatedLessons.set(lessonKey, newLesson);
+          updatedLessons.set(lessonKey, ({ ...newLesson, Key: lessonKey }));
           return updatedLessons;
         });
         setSelectedLessons(input);
@@ -106,9 +109,9 @@ export default function Chat() {
     }
     setIsGenerating(false);
   }
-  
 
-  const lessonsData = lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') : []
+
+  const lessonsData = useMemo(() => lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') : [], [lessons])
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
@@ -120,18 +123,18 @@ export default function Chat() {
             <Label htmlFor="topic">What topic do you want to learn?</Label>
             <div className="flex flex-row">
               <DiceButton onClick={() => {
-                 try {
-                  const messagesLocal = localStorage.getItem("messages.") || '[]'
-                
+                try {
+                  const messagesLocal = localStorage.getItem("messages") || '[]'
+
                   const chatMessages = JSON.parse(messagesLocal)
 
                   generatePlaceholder(input, Array.isArray(chatMessages) ? chatMessages : []).then(val => {
                     setPlaceholder(val)
                     setInput(val)
                   })
-              } catch(err){
-                console.warn(err)
-              }
+                } catch (err) {
+                  console.warn(err)
+                }
               }} />
               <Input
                 id="topic"
@@ -141,13 +144,13 @@ export default function Chat() {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const v = e.target.value
                   setInput(v)
-                  if(v === ' ' || v === '   '){
+                  if (v === ' ' || v === '   ') {
                     setInput(promptPlaceholder)
                   }
                 }}
               />
             </div>
-            <Button 
+            <Button
               onClick={handleGenerateLessons}
               disabled={isGenerating || !input.trim()}
             >
@@ -174,9 +177,22 @@ export default function Chat() {
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (
-                <LessonsContent input={input} lessonsData={lessonsData} generateMoreChallenges={(existingChallenges: Challenge[]) => {
-                  const prompt = `Generate more challenges.`+Math.random()
-handleGenerateMoreLessons(prompt)
+                <LessonsContent removeLesson={(lessonKey) => {
+                  
+                  if(lessons.has(lessonKey)){
+                    const confirmed = confirm("Delete " + lessonKey)
+                    if(confirmed) {
+                      setLessons(lessons => {
+                        lessons.delete(lessonKey)
+                        return new Map(lessons)
+                      })
+                    }
+                  } else {
+                    alert("Couldn't find lesson: "+lessonKey)
+                  }
+                }} input={input} lessonsData={lessonsData} generateMoreChallenges={(existingChallenges: Challenge[]) => {
+                  const prompt = `Generate more challenges.` + Math.random()
+                  handleGenerateMoreLessons(input + "\n"+prompt)
                 }} />
               ) : (
                 <p>Select or type a prompt and click generate to view its content.</p>

@@ -5,9 +5,8 @@ import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
 import { z } from 'zod';
 const models = {
-  'gpt-4o-mini': openai('gpt-4o-mini'),
   'gpt-4o': openai('gpt-4o'),
-  'gpt-o1': openai('gpt-o1'),
+  'gpt-o3-mini': openai('gpt-o3-mini'),
 }
 const paramsGenerateLessonsWithChallenges = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'], // was gpt-4o but mini should be cheaper for now
@@ -59,7 +58,7 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
   })
 })
 const paramsGenVertsTris = (prompt: string, temperature: number = 0.7) => ({
-  model: models['gpt-o1'],// was gpt-4o but mini should be cheaper for now
+  model: models['gpt-o3-mini'],// was gpt-4o but mini should be cheaper for now
   system: 'You generate *vertices* and *triangles* for a 3D model. The vertices are points in 3D space and the triangles are the faces of the 3D model. The vertices and triangles must form a valid 3D model.',
   prompt,
   temperature,
@@ -117,7 +116,7 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
 
 export async function generatePlaceholder(input: string | undefined, messages?: any[]) {
   const { text } = await generateText({
-    model: models['gpt-4o-mini'],
+    model: models['gpt-4o'],
     temperature: 0.7,
     messages: [
       ...(messages || []),

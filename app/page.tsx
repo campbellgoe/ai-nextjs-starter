@@ -30,7 +30,7 @@ export default function Chat() {
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
     if(messages.length === 0){
-      const messagesLocal = localStorage.getItem("messages.") || '[]'
+      const messagesLocal = localStorage.getItem("messages") || '[]'
       const oldMessages = JSON.parse(messagesLocal)
       if(oldMessages.length){
         setMessages(oldMessages)
@@ -38,7 +38,7 @@ export default function Chat() {
     }
     return () => {
       if(messages.length > 0){
-        localStorage.setItem("messages.", JSON.stringify(messages))
+        localStorage.setItem("messages", JSON.stringify(messages))
       }
     }
   }, [messages])
