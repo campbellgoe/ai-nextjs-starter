@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
+import { Delete } from 'lucide-react';
 // This is the only place InitializedMDXEditor is imported directly.
 const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
   // Make sure we turn SSR off
@@ -29,19 +30,19 @@ export default function Chat() {
   }});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
-    if(messages.length === 0){
-      const messagesLocal = localStorage.getItem("messages.") || '[]'
+    const messagesLocal = localStorage.getItem("messages.") || '[]'
       const oldMessages = JSON.parse(messagesLocal)
-      if(oldMessages.length){
+      if(Array.isArray(oldMessages)){
         setMessages(oldMessages)
       }
-    }
+    },[])
+  useEffect(() => {
+      
     return () => {
-      if(messages.length > 0){
-        localStorage.setItem("messages.", JSON.stringify(messages))
-      }
+      localStorage.setItem("messages.", JSON.stringify(messages))
     }
   }, [messages])
+  
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
@@ -60,7 +61,14 @@ export default function Chat() {
               })}>
                 <CardHeader className="py-2">
                   <CardTitle className="text-sm font-medium">
-                    {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)}
+                    {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)} <Button className="mt-4" onClick={() => {
+                      const confirmed = confirm("Delete "+m.content.slice(0, 30)+"...?")
+                      if(confirmed){
+                        
+                        setMessages((messages: Message[]) => messages.filter(a => a.id != m.id))
+
+                      }
+                    }}>Delete<Delete></Delete></Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

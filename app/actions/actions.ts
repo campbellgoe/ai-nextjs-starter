@@ -11,15 +11,15 @@ const models = {
 }
 const paramsGenerateLessonsWithChallenges = (prompt: string, temperature: number = 0.7) => ({
   model: models['gpt-4o'], // was gpt-4o but mini should be cheaper for now
-  system: 'You generate *lessons* and *challenges* for an education app to learn what they want, you can set (code using specific programming languages or simply in a spoken language as a challenge) challenges. Make sure to leave code questionStarter empty or with incomplete code so the user can fill it out.',
+    system: 'You generate *lessons* and *challenges* for an education app to learn what they want, you can set (code using specific programming languages or simply in a spoken language as a challenge) challenges. Make sure to make the code questionStarter one iteration before or different from the final complete solution.',
   prompt,
   temperature,
   schema: z.object({
     lessons: z.array(z.object({
       timestamp: z.string().describe('The timestamp of the lesson'),
-      topic: z.string().describe('The topic for the lesson'),
+      questionOrChallenge: z.string().describe('The questionOrChallenge for the lesson'),
       language: z.string().describe('The language e.g. code or spoken language.'),
-      helpInfo: z.string().describe('Helpful info about the topic to make the learners life easier.'),
+      helpInfo: z.string().describe('A hint toward the solution. Detailed and helpful information about the questionOrChallenge to make the learners life easier. Don\'t worry if you give the answer away but try to only hint at the solution.'),
       challenges: z.array(z.object({
         challenge: z.string().describe('The question or challenge.'),
         helpInfo: z.string().describe('Helpful info which explains everything they might be missing to help them resolve all aspects of the problem to fix the code problem. Can be in mdx format.'),
@@ -70,11 +70,11 @@ const paramsGenVertsTris = (prompt: string, temperature: number = 0.7) => ({
 })
 export async function generateLessons(input: string, temperature: number = 0.7) {
   'use server';
-  // let topic = 'unknown'
+  // let questionOrChallenge = 'unknown'
   // let language = 'unknown'
   // const detailsStream = createStreamableValue()
   // const details = {
-  //   topic, language
+  //   questionOrChallenge, language
   // }
   const stream = createStreamableValue();
 
@@ -93,11 +93,11 @@ export async function generateLessons(input: string, temperature: number = 0.7) 
 
 export async function generateCorrectness(correctAndUserCodesInput: string) {
   'use server';
-  // let topic = 'unknown'
+  // let questionOrChallenge = 'unknown'
   // let language = 'unknown'
   // const detailsStream = createStreamableValue()
   // const details = {
-  //   topic, language
+  //   questionOrChallenge, language
   // }
   const stream = createStreamableValue();
 
@@ -121,8 +121,8 @@ export async function generatePlaceholder(input: string | undefined, messages?: 
     temperature: 0.7,
     messages: [
       ...(messages || []),
-      { role: 'system', content: 'You genarate placeholder text for a prompt input. Generate a short, specific topic that would be interesting to learn about. Your response should be 5-10 words long. Use the programming language in the prompt e.g. {topic} in {language} (if given a coding topic or langauge)' },
-      { role: 'user', content: 'I want to learn and be challenged, what would make a good challenge? '+(input || '') }
+      { role: 'system', content: 'You genarate placeholder text for a prompt input. Generate a short, specific questionOrChallenge that would be interesting to learn about. Your response should be 5-10 words long. Use the programming language in the prompt e.g. {questionOrChallenge} in {language} (if given a coding questionOrChallenge or langauge)' },
+      { role: 'user', content: (input || '') }
     ],
   });
 

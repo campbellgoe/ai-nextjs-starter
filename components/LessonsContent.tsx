@@ -71,7 +71,6 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
     let storedCode = ''
     try {
       storedCode = localStorage.getItem(localCodeKey) || ''
-      console.log('stored code', localCodeKey, storedCode)
     } catch(err){
 
     }
@@ -227,20 +226,20 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
   );
 };
 
-export const LessonsContent: React.FC<{ input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input }) => {
+export const LessonsContent: React.FC<{ isGenerating: boolean, input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input, isGenerating}) => {
   return (lessonsData?.map(lessonData => (
-    <div key={lessonData.topic}>
+    <div key={lessonData.topic || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
       <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>
       {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
         <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
-      {/* <Button onClick={() => {
+      {!isGenerating && <Button className="mt-4" onClick={() => {
         generateMoreChallenges(lessonData?.challenges)
       }}>
         Generate more challenges
-      </Button> */}
+      </Button>}
     </div>
   )))
 }
