@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
-// @ts-ignore
+// @ts-expect-error prismjs problems
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -30,10 +30,12 @@ export interface Challenge {
 }
 
 interface LessonData {
+  questionOrChallenge: string;
   topic: string;
   language: string;
   helpInfo: string;
   challenges: Challenge[];
+  timestamp: number;
 }
 
 const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: string; }> = ({ challenge, language, input }) => {
@@ -42,7 +44,6 @@ const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: s
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
   const [correctness, setCorrectness] = useState<Map<string, any>>(new Map());
 
-          
   const solution = challenge?.codeComplete?.solution
   const problem = challenge?.codeExamplesIncomplete?.problem
   const solutionExtra = challenge?.codeComplete?.additionalCode
@@ -228,8 +229,9 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
 
 export const LessonsContent: React.FC<{ isGenerating: boolean, input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input, isGenerating}) => {
   return (lessonsData?.map(lessonData => (
-    <div key={lessonData.topic || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
+    <div key={lessonData.questionOrChallenge || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
+      <h3 className="text-xl font-bold mb-4">{lessonData.questionOrChallenge}</h3>
       <p className="mb-6">{lessonData.helpInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>
       {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
