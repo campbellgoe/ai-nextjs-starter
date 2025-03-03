@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
-// @ts-ignore
+// @ts-expect-error prismjs problems
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -12,37 +12,40 @@ import confetti from 'canvas-confetti'
 import { generateCorrectness } from "@/app/actions/actions";
 import { readStreamableValue } from "ai/rsc";
 import { Label } from "./ui/label";
+import { useAppContext } from "@/contexts/AppContext";
 // import { slugify } from "@/lib/utils";
 export interface Challenge {
   challenge: string;
-  helpInfo: string;
+  hintInfo: string;
   level: string;
   codeComplete: {
     solution: string;
     additionalCode: string;
-    helpInfo: string;
+    hintInfo: string;
   }
   codeExamplesIncomplete: {
     problem: string;
     additionalCode: string;
-    helpInfo: string;
+    hintInfo: string;
   }
 }
 
 interface LessonData {
+  questionOrChallenge: string;
   topic: string;
   language: string;
-  helpInfo: string;
+  hintInfo: string;
   challenges: Challenge[];
+  timestamp: number;
 }
 
 const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: string; }> = ({ challenge, language, input }) => {
+  const { setExpPointsSignal } = useAppContext()
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
   const [correctness, setCorrectness] = useState<Map<string, any>>(new Map());
-
-          
+const challengeText = challenge?.challenge;
   const solution = challenge?.codeComplete?.solution
   const problem = challenge?.codeExamplesIncomplete?.problem
   const solutionExtra = challenge?.codeComplete?.additionalCode
@@ -51,7 +54,7 @@ const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: s
   const codeSolutionHTML = solution ? highlight(solution) : ''
   const codeProblemExtraHTML = problemExtra ? highlight(problemExtra) : ''
   const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
-  const [challengeHelpInfoUser, challengeHelpInfoSolution] = [challenge?.codeExamplesIncomplete?.helpInfo, challenge?.codeComplete?.helpInfo]
+  const [challengeHelpInfoUser, challengeHelpInfoSolution] = [challenge?.codeExamplesIncomplete?.hintInfo, challenge?.codeComplete?.hintInfo]
   const [yourAttemptCode, setYourCode] = useState(
     ''
   );
@@ -61,11 +64,11 @@ ${yourAttemptCode}
 Challenge/Question:
 ${challenge.challenge}
 Hint:
-${challenge.helpInfo}
+${challenge.hintInfo}
 `
   const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
 const maxTries = 2
-const localCodeKey = useMemo(() => "code.userAttempt."+input,[input]) 
+const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
   useEffect(() => {
     
     let storedCode = ''
@@ -136,6 +139,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
         const newCorrectness = partialObject.correctness
         setCorrectness(prevCorrectness => {
           const updatedCorrectness = new Map(prevCorrectness);
+          updatedCorrectness.clear()
           updatedCorrectness.set(input, newCorrectness);
           return updatedCorrectness;
         });
@@ -149,6 +153,15 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
       localStorage.setItem(localCodeKey, yourAttemptCode)
     }
   }, [localCodeKey, yourAttemptCode])
+  const allowGetExpLock = useRef(false)
+  const [enabledGetExp, setEnabledGetExp] = useState(false)
+  useEffect(() => {
+    if(correctnessFeedback && correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0) {
+      allowGetExpLock.current = true;
+      setEnabledGetExp(true)
+      setExpPointsSignal((n: number) => typeof n == 'number' ? n+1 : 0)
+    }
+  }, [correctnessFeedback, allowGetExpLock, setExpPointsSignal])
   return (
     <Card className="mt-4">
       <CardHeader>
@@ -156,7 +169,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
       </CardHeader>
       <CardContent>
         <p className="mb-2"><strong>Level:</strong> {challenge.level}</p>
-        <p className="mb-2"><strong>Help:</strong> {challenge.helpInfo}</p>
+        <p className="mb-2"><strong>Help:</strong> {challenge.hintInfo}</p>
 
         {isCode && <><strong>Fix this code:</strong><div className="mt-2 p-4 bg-gray-100 rounded">
           <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeProblemHTML }} /></pre>
@@ -208,7 +221,17 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points.</div> : null}
+              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {enabledGetExp && <Button className="hover:underline hover:scale-105" onClick={() => {
+                if(enabledGetExp && allowGetExpLock.current === true){
+                  localStorage.setItem("user.experiencePoints", parseInt(localStorage.getItem("user.experiencePoints") || "0")+correctnessFeedback.expPointsWon+"")
+                  allowGetExpLock.current = false
+                  setEnabledGetExp(false)
+                } else {
+                  alert("Something went wrong getting your exp. or you already received it.")
+                 // setEnabledGetExp(false)
+                }
+
+              }}>Collect exp.</Button>}</div> : null}
               {(showSolution || correctnessFeedback?.correct )&& <div>
                 <label>GPTs solution:</label>
                 <pre className="whitespace-break-spaces"><code dangerouslySetInnerHTML={{ __html: codeSolutionHTML }} /></pre>
@@ -228,9 +251,10 @@ const localCodeKey = useMemo(() => "code.userAttempt."+input,[input])
 
 export const LessonsContent: React.FC<{ isGenerating: boolean, input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input, isGenerating}) => {
   return (lessonsData?.map(lessonData => (
-    <div key={lessonData.topic || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
+    <div key={lessonData.questionOrChallenge || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
-      <p className="mb-6">{lessonData.helpInfo}</p>
+      <h3 className="text-xl font-bold mb-4">{lessonData.questionOrChallenge}</h3>
+      <p className="mb-6">{lessonData.hintInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>
       {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
         <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />

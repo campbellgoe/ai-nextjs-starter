@@ -5,7 +5,7 @@ import { generateLessons, generatePlaceholder } from '@/app/actions/actions';
 import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Challenge, LessonsContent } from '@/components/LessonsContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
@@ -16,10 +16,11 @@ export const maxDuration = 45;
 
 interface Lesson {
   Key?: string;
+  questionOrChallenge: string;
   topic: string;
   language: string;
-  helpInfo: string;
-  challenges: any[];
+  hintInfo: string;
+  challenges: Challenge[];
   timestamp: number;
 }
 export default function Chat() {
@@ -30,6 +31,7 @@ export default function Chat() {
         try {
           return typeof messagesLocal == 'string' ? JSON.parse(messagesLocal) : Array.isArray(messagesLocal) ? messagesLocal : []
         } catch(err){
+          console.warn(err)
           return []
         }
       }, [messagesLocal])
@@ -66,7 +68,7 @@ export default function Chat() {
         // console.log(oldMessages.findLast(isUser))
       }
     }
-  }, [oldMessages])
+  }, [oldMessages, messages.length])
 
   useEffect(() => {
     if (!isGenerating) {
@@ -164,7 +166,7 @@ export default function Chat() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[40vh] overflow-y-auto">
                   {Array.from(lessons.entries())
-                    .map(([key, lesson]) => (
+                    .map(([key, _lesson]) => (
                       <SelectItem key={key} value={key}>
                         {key}
                       </SelectItem>
@@ -173,16 +175,16 @@ export default function Chat() {
               </Select>
             </div>
           )}
-          {!isGenerating && selectedLessons && <Button className="mb-4" onClick={() => {
+          {!isGenerating && selectedLessons && <><Button className="mb-4" onClick={() => {
             const confirmed = confirm("Delete "+input+"?")
             if(confirmed) removeLesson(input)
           }}>
             Delete
-          </Button>}
+          </Button>{" "}<span>{input}</span></>}
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (
-                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={(existingChallenges: Challenge[]) => {
+                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={(_existingChallenges: Challenge[]) => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
 handleGenerateMoreLessons(input)
                 }} />
