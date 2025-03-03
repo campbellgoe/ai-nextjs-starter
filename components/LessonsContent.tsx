@@ -13,6 +13,7 @@ import { generateCorrectness } from "@/app/actions/actions";
 import { readStreamableValue } from "ai/rsc";
 import { Label } from "./ui/label";
 import { useAppContext } from "@/contexts/AppContext";
+import { getData, setData } from "@/contexts/datasource";
 // import { slugify } from "@/lib/utils";
 export interface Challenge {
   challenge: string;
@@ -71,17 +72,21 @@ const maxTries = 2
 const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
   useEffect(() => {
     
-    let storedCode = ''
     try {
-      storedCode = localStorage.getItem(localCodeKey) || ''
+      const handleGetStoredCode = async () => {
+        return await getData(localCodeKey) || ''
+      }
+      handleGetStoredCode().then((storedCode: any) => {
+        if(!!storedCode){
+          setYourCode(storedCode)
+        } else {
+          setYourCode(problem === solution ? '' : problem)
+        }
+      })
     } catch(err){
 
     }
-    if(!!storedCode){
-      setYourCode(storedCode)
-    } else {
-      setYourCode(problem === solution ? '' : problem)
-    }
+    
   }, [localCodeKey, problem, solution])
   const [nTries, setNTries] = useState(0)
 
@@ -150,7 +155,10 @@ const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeT
   
   useEffect(() => {
     if(yourAttemptCode){
-      localStorage.setItem(localCodeKey, yourAttemptCode)
+      const handleSetCodeAttempt = async () => {
+        return await setData(localCodeKey, yourAttemptCode)
+      }
+      handleSetCodeAttempt()
     }
   }, [localCodeKey, yourAttemptCode])
   const allowGetExpLock = useRef(false)
@@ -221,9 +229,9 @@ const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeT
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {enabledGetExp && <Button className="hover:underline hover:scale-105" onClick={() => {
+              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {enabledGetExp && <Button className="hover:underline hover:scale-105" onClick={async () => {
                 if(enabledGetExp && allowGetExpLock.current === true){
-                  localStorage.setItem("user.experiencePoints", parseInt(localStorage.getItem("user.experiencePoints") || "0")+correctnessFeedback.expPointsWon+"")
+                  await setData("user.experiencePoints", (getData("user.experiencePoints") || 0)+correctnessFeedback.expPointsWon+"")
                   allowGetExpLock.current = false
                   setEnabledGetExp(false)
                 } else {

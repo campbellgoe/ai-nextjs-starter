@@ -2,14 +2,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from "clsx"
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from './ui/button';
 import { useAppContext } from '@/contexts/AppContext'
+import { getData } from '@/contexts/datasource';
 export default function Navigation() {
+  const [experiencePoints, setExp] = useState(0)
   const pathname = usePathname()
   const { setExpPointsSignal, experiencePointsSignal } = useAppContext()
-const experiencePoints = useMemo(() => {
-  return parseInt(localStorage.getItem("user.experiencePoints") || '0')
+ useEffect(() => {
+  const handleSetExp = async () => {
+    return await getData<any>("user.experiencePoints") || 0
+  }
+  handleSetExp().then((exp: number) => {
+    if(typeof exp == 'number'){
+      setExp(exp)
+    }
+  })
+
 }, [experiencePointsSignal])
   return (
     <nav className="bg-background shadow-sm">

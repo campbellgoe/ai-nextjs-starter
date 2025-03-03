@@ -10,6 +10,7 @@ import { Challenge, LessonsContent } from '@/components/LessonsContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
+import { getData, setData } from '@/contexts/datasource';
 
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 45;
@@ -26,7 +27,9 @@ interface Lesson {
 export default function Chat() {
   const [messages, setMessages] = useState<[]>([])
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
-  const messagesLocal = useMemo(() =>typeof window != 'undefined' && localStorage.getItem("messages."+selectedLessons) || [], [selectedLessons])
+  const messagesLocal = useMemo(() =>{
+    getData("messages."+selectedLessons) || []
+  }, [selectedLessons])
       const oldMessages = useMemo(() => {
         try {
           return typeof messagesLocal == 'string' ? JSON.parse(messagesLocal) : Array.isArray(messagesLocal) ? messagesLocal : []
@@ -45,20 +48,26 @@ export default function Chat() {
     if(selectedLessons) setInput(selectedLessons)
   }, [selectedLessons])
   useEffect(() => {
-    const storedLessons = localStorage.getItem("lessons");
-    if (storedLessons) {
-      try {
-        const parsedLessons = JSON.parse(storedLessons);
-        if(parsedLessons.length) {
-          setLessons(new Map(parsedLessons));
+    const handleSetStoredLessonsOnStartup = async () => {
+      const storedLessons = await getData<[]>("lessons");
+      if (storedLessons) {
+        try {
+            setLessons(new Map(storedLessons));
+        } catch (err) {
+          console.warn("Couldn't parse stored lessons", err);
         }
-      } catch (err) {
-        console.warn("Couldn't parse stored lessons", err);
       }
     }
-
-    // generatePlaceholder('').then(setPlaceholder)
-  }, []);
+    handleSetStoredLessonsOnStartup()
+   
+return () => {
+  // on exit
+          const handleSetStoredLessonsOnExit = async () => {
+            await setData("lessons", JSON.stringify(Array.from(lessons.entries())));
+        }
+        handleSetStoredLessonsOnExit()
+  }
+}, [])
   const isUser = (message: any) => message.role === 'user'
   useEffect(() => {
     if(oldMessages.length && messages.length < oldMessages.length){
@@ -72,7 +81,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!isGenerating) {
-      localStorage.setItem("lessons", JSON.stringify(Array.from(lessons.entries())));
+      setData("lessons", Array.from(lessons.entries()));
     }
   }, [lessons, isGenerating]);
 
@@ -117,13 +126,12 @@ export default function Chat() {
           <div className="mb-6 flex flex-col space-y-2">
             <Label htmlFor="topic">What topic do you want to learn?</Label>
             <div className="flex flex-row">
-              <DiceButton onClick={() => {
+              <DiceButton onClick={async () => {
                  try {
-                  const messagesLocal = localStorage.getItem("messages.") || '[]'
+                  const messagesLocal = await getData("messages.") || []
                 
-                  const chatMessages = JSON.parse(messagesLocal)
 
-                  generatePlaceholder(input, Array.isArray(chatMessages) ? chatMessages : []).then(val => {
+                  generatePlaceholder(input, Array.isArray(messagesLocal) ? messagesLocal : []).then(val => {
                     setPlaceholder(val)
                     setInput(val)
                   })
