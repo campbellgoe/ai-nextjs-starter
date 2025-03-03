@@ -19,7 +19,7 @@ interface Lesson {
   questionOrChallenge: string;
   topic: string;
   language: string;
-  helpInfo: string;
+  hintInfo: string;
   challenges: Challenge[];
   timestamp: number;
 }
@@ -175,12 +175,12 @@ export default function Chat() {
               </Select>
             </div>
           )}
-          {!isGenerating && selectedLessons && <Button className="mb-4" onClick={() => {
+          {!isGenerating && selectedLessons && <><Button className="mb-4" onClick={() => {
             const confirmed = confirm("Delete "+input+"?")
             if(confirmed) removeLesson(input)
           }}>
             Delete
-          </Button>}
+          </Button>{" "}<span>{input}</span></>}
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (

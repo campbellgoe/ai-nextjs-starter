@@ -4,13 +4,11 @@ import { streamObject, generateText, Message, CallWarning, LanguageModelResponse
 import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
 import { z, ZodObject } from 'zod';
-const GPT4o = 'gpt-4o'
-const GPT4oMini = 'gpt-4o-mini'
-const GPTo1 = 'gpt-o1'
+const GPT_4O = 'gpt-4o'
+const GPT_4O_MINI = 'gpt-4o-mini'
 const models = {
-  [GPT4oMini]: openai(GPT4oMini),
-  [GPT4o]: openai(GPT4o),
-  [GPTo1]: openai(GPTo1),
+  [GPT_4O_MINI]: openai(GPT_4O_MINI),
+  [GPT_4O]: openai(GPT_4O),
 }
 export type OnFinishCallback = {
     /**
@@ -20,7 +18,7 @@ export type OnFinishCallback = {
     /**
   The generated object. Can be undefined if the final object does not match the schema.
   */
-    object: RESULT | undefined;
+    object: any | undefined;
     /**
   Optional error object. This is e.g. a TypeValidationError when the final object does not match the schema.
   */
@@ -40,14 +38,8 @@ export type OnFinishCallback = {
   */
     experimental_providerMetadata: ProviderMetadata | undefined;
 }
-type RESULT = {
-  model: LanguageModelV1,
-  prompt: string,
-  temperature: number;
-  schema: ZodObject<any>
-}
-const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT4o, prompt: string, temperature: number = 0.7, system: string = "") => ({
-  model: model in models ? models[model] : models[GPT4o], // user can set the model for this query but defaults to gpt-4o
+const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O, prompt: string, temperature: number = 0.7, system: string = "") => ({
+  model: model in models ? models[model] : models[GPT_4O], // user can set the model for this query but defaults to gpt-4o
     system: 'You generate *lessons* and *challenges* for an education app to learn what they want, you can set (code using specific programming languages or simply in a spoken language as a challenge) challenges. Make sure to make the code questionStarter one iteration before or different from the final complete solution.\nUser instructions for system:\n'+system,
   prompt,
   temperature,
@@ -56,25 +48,24 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT4o,
       timestamp: z.string().describe('The timestamp of the lesson'),
       questionOrChallenge: z.string().describe('The questionOrChallenge for the lesson'),
       language: z.string().describe('The language e.g. code or spoken language.'),
-      helpInfo: z.string().describe('A hint toward the solution. Detailed and helpful information about the questionOrChallenge to make the learners life easier. Don\'t worry if you give the answer away but try to only hint at the solution.'),
+      hintInfo: z.string().describe('A hint toward the solution. Detailed and helpful information about the questionOrChallenge to make the learners life easier. Don\'t worry if you give the answer away but try to only hint at the solution.'),
       challenges: z.array(z.object({
         challenge: z.string().describe('The question or challenge.'),
-        helpInfo: z.string().describe('Helpful info which explains everything they might be missing to help them resolve all aspects of the problem to fix the code problem.'),
+        hintInfo: z.string().describe('Helpful info which explains everything they might be missing to help them resolve all aspects of the problem to fix the code problem.'),
         level: z.enum(["beginner", "intermediate", "advanced", "expert", "master"]),
         codeExamplesIncomplete: z.object({
           problem: z.string().describe("Commented incomplete or incorrect code for the user to fix."),
           additionalCode: z.string().describe("Any optional additional code."),
-          helpInfo: z.string().describe('Helpful info about the problem code.'),
+          hintInfo: z.string().describe('Helpful info about the problem code.'),
         }).describe("The incomplete code for the user to fix."),
         codeComplete: z.object({
           solution: z.string().describe("The code solution in the language."),
           additionalCode: z.string().describe("Any optional additional code."),
-          helpInfo: z.string().describe('Helpful info about gpts solution.'),
+          hintInfo: z.string().describe('Helpful info about gpts solution.'),
         })
       }))
     })),
   }),
-  output:'object',
   onFinish({ usage }: OnFinishCallback ) {
     console.log('Token usage:', usage);
     
@@ -82,7 +73,7 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT4o,
 })
 // acceptable prompts include the question or challenge, the hint info, the example correct code, and the user code in a single string of characters
 const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temperature: number = 0.7) => ({
-  model: models[GPT4o],// was gpt-4o but mini should be cheaper for now
+  model: models[GPT_4O],// was gpt-4o but mini should be cheaper for now
   system: 'You generate *correctness* feedback for the user code and the question, hint info, and the example correct code. Acceptable answers must solve the problem posed in the question/challenge and alternatives to the solution may be allowed. You provide the correct answer and the feedback on the users code. Example feedback could be "Correct, you provided an alternative solution." or "Incorrect, but you are close." or Correct! Our solutions match!" or "Incorrect, hint:...". or "Correct! Close enough!". Good feedback is concise and to the point and helps the user understand how to solve the given problem.',
   prompt,
   temperature,
@@ -96,22 +87,22 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
     })
   })
 })
-const paramsGenerateProgrammingLanguages = (model: keyof typeof models = GPTo1, temperature: number = 0.7) => ({
-  model: model in models ? models[model] : models[GPTo1],
+const paramsGenerateProgrammingLanguages = (model: keyof typeof models = GPT_4O, temperature: number = 0.7) => ({
+  model: model in models ? models[model] : models[GPT_4O],
   system: 'You generate a list of programming languages so the user can become aware of them and will render the list in an accordion.',
   prompt: "List all programming languages you know by relevance or popularity enhaustively.",
   temperature,
   schema: z.array(z.object({
     language: z.string().describe('The programming language'),
   }))
-})
+});
 export async function generateProgrammingLanguages(temperature: number = 0.7) {
   'use server';
   
   const stream = createStreamableValue();
 
   (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateProgrammingLanguages(GPTo1, temperature));
+    const { partialObjectStream } = streamObject(paramsGenerateProgrammingLanguages(GPT_4O, temperature));
 
     for await (const partialObject of partialObjectStream) {
       stream.update(partialObject);
@@ -133,7 +124,7 @@ export async function generateLessons(input: string, temperature: number = 0.7) 
   const stream = createStreamableValue();
 
   (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(GPTo1, input, temperature, ""));
+    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(GPT_4O, input, temperature));
 
     for await (const partialObject of partialObjectStream) {
       stream.update(partialObject);
@@ -171,7 +162,7 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
 
 export async function generatePlaceholder(input: string | undefined, messages?: Message[]) {
   const { text } = await generateText({
-    model: models[GPT4oMini],
+    model: models[GPT_4O_MINI],
     temperature: 0.7,
     messages: [
       ...(messages || []),
