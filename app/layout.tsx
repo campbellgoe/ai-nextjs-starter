@@ -2,7 +2,8 @@ import Navigation from '@/components/Navigation'
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import Link from 'next/link';
+import { AppProvider } from '@/contexts/AppContext'
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -28,10 +29,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navigation />
-        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          {children}
-        </main>
+        <AppProvider>
+          <>
+            <Navigation />
+            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+              {children}
+            </main>
+          </>
+        </AppProvider>
+        <footer className="p-8">Demo by <Link className="hover:underline hover:scale-105" href="https://massless.ltd">MASSLESS LTD.</Link> | All rights reserved | Copyright &copy; 2025</footer>
       </body>
     </html>
   );

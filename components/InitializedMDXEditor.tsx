@@ -1,5 +1,4 @@
 'use client'
-// @ts-ignore
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -38,7 +37,7 @@ import Editor from 'react-simple-code-editor'
 
 const PlainTextCodeEditorDescriptor: CodeBlockEditorDescriptor = {
   // always use the editor, no matter the language or the meta of the code block
-  match: (language, meta) => true,
+  match: () => true,
   // You can have multiple editors with different priorities, so that there's a "catch-all" editor (with the lowest priority)
   priority: 0,
   // The Editor is a React component

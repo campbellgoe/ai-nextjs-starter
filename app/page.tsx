@@ -1,9 +1,8 @@
 'use client';
 
 import { Message, useChat } from 'ai/react';
-import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
+import {  Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
@@ -18,15 +17,14 @@ export const maxDuration = 60;
 // This is what is imported by other components. Pre-initialized with plugins, and ready
 // to accept other props, including a ref.
 
-
 // TS complains without the following line
 MyMdx.displayName = 'MyMDX'
 export default function Chat() {
-  const [usage, setUsage] = useState(0)
+  // const _usage = useContextState(['usage', 'setUsage'])
   const [generating, setGenerating] = useState(false)
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (message: Message, { usage, finishReason }) => {
+  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (_message: Message, { usage, finishReason: _finishReason }) => {
       setGenerating(false)
-      setUsage(u => u + usage.totalTokens)
+      // setUsage(u => u + usage.totalTokens)
   }});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
@@ -41,7 +39,7 @@ export default function Chat() {
     return () => {
       localStorage.setItem("messages.", JSON.stringify(messages))
     }
-  }, [messages])
+  }, [messages, setMessages])
   
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
