@@ -1,6 +1,6 @@
 'use client';
 
-import { Message, useChat } from 'ai/react';
+import { Message, useChat } from '@ai-sdk/react';
 import {  Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,7 +24,7 @@ MyMdx.displayName = 'MyMDX'
 export default function ChatPage() {
   // const _usage = useContextState(['usage', 'setUsage'])
   const [generating, setGenerating] = useState(false)
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (_message: Message, { usage, finishReason: _finishReason }) => {
+  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (/*_message: Message, { usage, finishReason: _finishReason }*/) => {
       setGenerating(false)
       // setUsage(u => u + usage.totalTokens)
   }});

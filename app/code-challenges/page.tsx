@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
 import { getData, setData } from '@/contexts/datasource';
+import { Message } from 'ai';
 
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 45;
@@ -25,14 +26,21 @@ interface Lesson {
   timestamp: number;
 }
 export default function Chat() {
-  const [messages, setMessages] = useState<[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
-  const messagesLocal = useMemo(() =>{
-    getData("messages."+selectedLessons) || []
+  const [messagesLocal, setMessagesLocal] = useState([])
+  useEffect(() => {
+    const handleGetLocalMessages = async (): Promise<[]> => {
+      const key = "messages."+selectedLessons
+      return await getData(key) || []
+    }
+    handleGetLocalMessages().then((messages: []) => {
+      setMessagesLocal(messages)
+    })
   }, [selectedLessons])
-      const oldMessages = useMemo(() => {
+      const oldMessages: Message[] = useMemo(() => {
         try {
-          return typeof messagesLocal == 'string' ? JSON.parse(messagesLocal) : Array.isArray(messagesLocal) ? messagesLocal : []
+          return messagesLocal
         } catch(err){
           console.warn(err)
           return []
@@ -68,7 +76,7 @@ return () => {
         handleSetStoredLessonsOnExit()
   }
 }, [])
-  const isUser = (message: any) => message.role === 'user'
+  const isUser = (message: Message) => message.role === 'user'
   useEffect(() => {
     if(oldMessages.length && messages.length < oldMessages.length){
       setMessages(oldMessages)
@@ -174,7 +182,7 @@ return () => {
                 </SelectTrigger>
                 <SelectContent className="max-h-[40vh] overflow-y-auto">
                   {Array.from(lessons.entries())
-                    .map(([key, _lesson]) => (
+                    .map(([key]) => (
                       <SelectItem key={key} value={key}>
                         {key}
                       </SelectItem>
@@ -192,7 +200,7 @@ return () => {
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (
-                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={(_existingChallenges: Challenge[]) => {
+                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
 handleGenerateMoreLessons(input)
                 }} />

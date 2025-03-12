@@ -1,9 +1,9 @@
 'use server';
 
-import { streamObject, generateText, Message, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata, LanguageModelV1 } from 'ai';
+import { streamObject, generateText, Message, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
-import { z, ZodObject } from 'zod';
+import { z } from 'zod';
 const GPT_4O = 'gpt-4o'
 const GPT_4O_MINI = 'gpt-4o-mini'
 const models = {
@@ -66,7 +66,7 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O
       }))
     })),
   }),
-  onFinish({ usage }: OnFinishCallback ) {
+  onFinish({ usage }: { usage: LanguageModelUsage } ) {
     console.log('Token usage:', usage);
     
   },
@@ -124,7 +124,7 @@ export async function generateLessons(input: string, temperature: number = 0.7) 
   const stream = createStreamableValue();
 
   (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(GPT_4O, input, temperature));
+    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(GPT_4O, input, temperature, ""));
 
     for await (const partialObject of partialObjectStream) {
       stream.update(partialObject);
