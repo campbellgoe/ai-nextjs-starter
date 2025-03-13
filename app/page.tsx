@@ -1,43 +1,47 @@
 'use client';
 
-import { Message, useChat } from 'ai/react';
+import { Message, useChat } from '@ai-sdk/react';
 import {  Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { Delete } from 'lucide-react';
+import { getData, setData } from '@/contexts/datasource';
 // This is the only place InitializedMDXEditor is imported directly.
 const MyMdx = dynamic(() => import('@/components/InitializedMDXEditor'), {
   // Make sure we turn SSR off
   ssr: false
 })
 // Allow streaming responses up to 30 seconds
-export const maxDuration = 60;
+export const maxDuration = 30;
 // This is what is imported by other components. Pre-initialized with plugins, and ready
-// to accept other props, including a ref.
+// to accept other
+// props, including a ref.
 
 // TS complains without the following line
 MyMdx.displayName = 'MyMDX'
-export default function Chat() {
+export default function ChatPage() {
   // const _usage = useContextState(['usage', 'setUsage'])
   const [generating, setGenerating] = useState(false)
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (_message: Message, { usage, finishReason: _finishReason }) => {
+  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (/*_message: Message, { usage, finishReason: _finishReason }*/) => {
       setGenerating(false)
       // setUsage(u => u + usage.totalTokens)
   }});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
-    const messagesLocal = localStorage.getItem("messages.") || '[]'
-      const oldMessages = JSON.parse(messagesLocal)
-      if(Array.isArray(oldMessages)){
-        setMessages(oldMessages)
+    const messagesLocal = getData("messages.") || []
+      if(Array.isArray(messagesLocal)){
+        setMessages(messagesLocal)
       }
     },[])
   useEffect(() => {
       
     return () => {
-      localStorage.setItem("messages.", JSON.stringify(messages))
+      const handleSetSavedMessagesOnExit = async () => {
+        await setData("messages.", messages)
+      }
+      handleSetSavedMessagesOnExit()
     }
   }, [messages, setMessages])
   

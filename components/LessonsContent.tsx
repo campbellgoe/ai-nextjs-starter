@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
 // @ts-expect-error prismjs problems
@@ -13,6 +13,7 @@ import { generateCorrectness } from "@/app/actions/actions";
 import { readStreamableValue } from "ai/rsc";
 import { Label } from "./ui/label";
 import { useAppContext } from "@/contexts/AppContext";
+import { getData, setData } from "@/contexts/datasource";
 // import { slugify } from "@/lib/utils";
 export interface Challenge {
   challenge: string;
@@ -39,8 +40,8 @@ interface LessonData {
   timestamp: number;
 }
 
-const ChallengeCard: React.FC<{ input: string, challenge: Challenge; language: string; }> = ({ challenge, language, input }) => {
-  const { setExpPointsSignal } = useAppContext()
+const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ challenge, language }) => {
+  const { localCodeKey, setLocalCodeKey, hasCollectedExp, setHasCollectedExp, setExpPoints, experiencePoints } = useAppContext()
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
@@ -68,21 +69,33 @@ ${challenge.hintInfo}
 `
   const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
 const maxTries = 2
-const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
+const myLocalCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
+useEffect(() => {
+  if(myLocalCodeKey != localCodeKey){
+    setLocalCodeKey(myLocalCodeKey)
+  }
+}, [myLocalCodeKey])
   useEffect(() => {
     
-    let storedCode = ''
     try {
-      storedCode = localStorage.getItem(localCodeKey) || ''
-    } catch(err){
-
+      const handleGetStoredCode = async () => {
+        if(myLocalCodeKey){
+        return await getData(myLocalCodeKey) || ''
+        }
+        return ''
+      }
+      handleGetStoredCode().then((storedCode: any) => {
+        if(!!storedCode){
+          setYourCode(storedCode)
+        } else {
+          setYourCode(problem === solution ? '' : problem)
+        }
+      })
+    } catch(err: any){
+console.warn(err)
     }
-    if(!!storedCode){
-      setYourCode(storedCode)
-    } else {
-      setYourCode(problem === solution ? '' : problem)
-    }
-  }, [localCodeKey, problem, solution])
+    
+  }, [myLocalCodeKey, problem, solution])
   const [nTries, setNTries] = useState(0)
 
   useEffect(() => {
@@ -94,7 +107,7 @@ const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeT
           origin: { y: 0.7 }
         };
 
-        function fire(particleRatio: number, opts: {}) {
+        function fire(particleRatio: number, opts: any) {
           confetti({
             ...defaults,
             ...opts,
@@ -150,18 +163,38 @@ const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeT
   
   useEffect(() => {
     if(yourAttemptCode){
-      localStorage.setItem(localCodeKey, yourAttemptCode)
+      const handleSetCodeAttempt = async () => {
+        await setData(myLocalCodeKey, yourAttemptCode)
+      }
+      handleSetCodeAttempt()
     }
-  }, [localCodeKey, yourAttemptCode])
+  }, [myLocalCodeKey, yourAttemptCode])
   const allowGetExpLock = useRef(false)
   const [enabledGetExp, setEnabledGetExp] = useState(false)
   useEffect(() => {
     if(correctnessFeedback && correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0) {
       allowGetExpLock.current = true;
-      setEnabledGetExp(true)
-      setExpPointsSignal((n: number) => typeof n == 'number' ? n+1 : 0)
+      
+      // TODO: only enable get exp if they haven't already collected it
+      //if(!hasCollectedExp){
+        setEnabledGetExp(true)
+     // }
+      
+      // setEnabledGetExp(true)
+      // setExpPoints((n: number) => n+10 : 0)
     }
-  }, [correctnessFeedback, allowGetExpLock, setExpPointsSignal])
+  }, [correctnessFeedback, allowGetExpLock, setExpPoints, myLocalCodeKey, hasCollectedExp])
+  
+  const handleGetExp = useCallback((exp: number = 10) => {
+    const handler = async () => {
+      if(!hasCollectedExp) await setData(myLocalCodeKey+".hasCollectedExp", true)
+      if(typeof exp == 'number' && exp > 0) await setData("experiencePoints", experiencePoints+exp)
+      setExpPoints((e: number) => e + exp)
+      setHasCollectedExp(true)
+    }
+    handler()
+  }, [myLocalCodeKey, hasCollectedExp, experiencePoints])
+  
   return (
     <Card className="mt-4">
       <CardHeader>
@@ -221,9 +254,9 @@ const localCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeT
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {enabledGetExp && <Button className="hover:underline hover:scale-105" onClick={() => {
-                if(enabledGetExp && allowGetExpLock.current === true){
-                  localStorage.setItem("user.experiencePoints", parseInt(localStorage.getItem("user.experiencePoints") || "0")+correctnessFeedback.expPointsWon+"")
+              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
+                if(enabledGetExp && !hasCollectedExp && allowGetExpLock.current === true){
+                  handleGetExp(correctnessFeedback.expPointsWon)
                   allowGetExpLock.current = false
                   setEnabledGetExp(false)
                 } else {

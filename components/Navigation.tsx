@@ -2,15 +2,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import clsx from "clsx"
-import { useMemo, useState } from 'react';
 import { Button } from './ui/button';
 import { useAppContext } from '@/contexts/AppContext'
 export default function Navigation() {
   const pathname = usePathname()
-  const { setExpPointsSignal, experiencePointsSignal } = useAppContext()
-const experiencePoints = useMemo(() => {
-  return parseInt(localStorage.getItem("user.experiencePoints") || '0')
-}, [experiencePointsSignal])
+  const {experiencePoints } = useAppContext()
   return (
     <nav className="bg-background shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,20 +23,21 @@ const experiencePoints = useMemo(() => {
               <NavLink href="/code-challenges" active={pathname === "/code-challenges"}>
                 Challenges
               </NavLink>
+              <NavLink href="/inspiration-designer" active={pathname === "/inspiration-designer"}>
+                Inspire Website Designer
+              </NavLink>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             {/* You can add user menu or other items here */}
             <span className="hover:underline hover:scale-105"><Button onClick={() => {
-              setExpPointsSignal((n: number) => n+Math.random()-0.5)
-              setTimeout(() => alert("You've earned "+experiencePoints+" experience points!"), 100)
+              // setExpPoints((n: number) => n+Math.random()-0.5)
             }}>{experiencePoints} exp.</Button></span>
           </div>
           <div className="-mr-2 flex items-center sm:hidden">
             {/* Add a mobile menu button here if needed */}
             <span className="hover:underline hover:scale-105"><Button onClick={() => {
-              setExpPointsSignal((n: number) => n+Math.random()-0.5)
-              setTimeout(() => alert("You've earned "+experiencePoints+" experience points!"), 100)
+              // setExpPoints((n: number) => n+Math.random()-0.5)
             }}>{experiencePoints} exp.</Button></span>
           </div>
         </div>

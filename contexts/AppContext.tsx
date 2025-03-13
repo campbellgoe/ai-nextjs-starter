@@ -19,8 +19,12 @@ export type AppContextType = {
   // register: (name: string, email: string, password: string) => Promise<boolean>
   userClientSettings: { backgroundColourHex: string },
   setUserClientSettings: (settings: any) => void
-  experiencePointsSignal: number;
-  setExpPointsSignal:any;
+  experiencePoints: number;
+  setExpPoints:any;
+  hasCollectedExp: boolean;
+  setHasCollectedExp: any;
+  localCodeKey: string | null;
+  setLocalCodeKey: any;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -28,13 +32,6 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // const [user, setUser] = useState<User | null>(null)
 
-  // useEffect(() => {
-  //   const initializeData = async () => {
-  //     // const storedUser = await getData<User>('currentUser')
-  //     // if (storedUser) setUser(storedUser)
-  //   }
-  //   initializeData()
-  // }, [])
 
   // const register = async (name: string, email: string, password: string): Promise<boolean> => {
   //   const newUser = await fetch('/api/account/register', {
@@ -82,9 +79,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     backgroundColourHex: '#ffcc00'
   })
 
-  const [experiencePointsSignal, setExpPointsSignal] = useState(100)
+  const [experiencePoints, setExpPoints] = useState(0)
+  const [hasCollectedExp, setHasCollectedExp] = useState(false)
+  const [localCodeKey, setLocalCodeKey] = useState(null)
+  useEffect(() => {
+    const handler = async () => {
+      const localExp: number = await getData("experiencePoints") || 0
+      if(localExp > experiencePoints){
+        setExpPoints(localExp)
+        await setData(localCodeKey+".hasCollectedExp", true)
+      //  await setData(localCodeKey+".experiencePoints", experiencePoints)
+      } else {
+        // alert("exp ")
+      }
+    }
+    handler()
+  }, [])
+  useEffect(() => {
+    const handler = async () => {
+      if(localCodeKey){
+        const localHasCollectedExp: boolean | null = await getData(localCodeKey+".hasCollectedExp")
+        //
+
+        const localExpPoints: number = await getData("experiencePoints") || 0
+        if(localExpPoints > experiencePoints){
+          setExpPoints(localExpPoints || 10)
+          if(localHasCollectedExp) setHasCollectedExp(true)
+        }
+      }
+    }
+    handler()
+  }, [localCodeKey, experiencePoints])
   return (
-    <AppContext.Provider value={{ userClientSettings, setUserClientSettings, experiencePointsSignal, setExpPointsSignal }}>
+    <AppContext.Provider value={{ localCodeKey, setLocalCodeKey, hasCollectedExp, setHasCollectedExp, userClientSettings, setUserClientSettings, experiencePoints, setExpPoints }}>
       {children}
     </AppContext.Provider>
   )

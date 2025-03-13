@@ -10,6 +10,8 @@ import { Challenge, LessonsContent } from '@/components/LessonsContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
+import { getData, setData } from '@/contexts/datasource';
+import { Message } from 'ai';
 
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 45;
@@ -24,12 +26,21 @@ interface Lesson {
   timestamp: number;
 }
 export default function Chat() {
-  const [messages, setMessages] = useState<[]>([])
+  const [messages, setMessages] = useState<Message[]>([])
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
-  const messagesLocal = useMemo(() =>typeof window != 'undefined' && localStorage.getItem("messages."+selectedLessons) || [], [selectedLessons])
-      const oldMessages = useMemo(() => {
+  const [messagesLocal, setMessagesLocal] = useState([])
+  useEffect(() => {
+    const handleGetLocalMessages = async (): Promise<[]> => {
+      const key = "messages."+selectedLessons
+      return await getData(key) || []
+    }
+    handleGetLocalMessages().then((messages: []) => {
+      setMessagesLocal(messages)
+    })
+  }, [selectedLessons])
+      const oldMessages: Message[] = useMemo(() => {
         try {
-          return typeof messagesLocal == 'string' ? JSON.parse(messagesLocal) : Array.isArray(messagesLocal) ? messagesLocal : []
+          return messagesLocal
         } catch(err){
           console.warn(err)
           return []
@@ -45,21 +56,27 @@ export default function Chat() {
     if(selectedLessons) setInput(selectedLessons)
   }, [selectedLessons])
   useEffect(() => {
-    const storedLessons = localStorage.getItem("lessons");
-    if (storedLessons) {
-      try {
-        const parsedLessons = JSON.parse(storedLessons);
-        if(parsedLessons.length) {
-          setLessons(new Map(parsedLessons));
+    const handleSetStoredLessonsOnStartup = async () => {
+      const storedLessons = await getData<[]>("lessons");
+      if (storedLessons) {
+        try {
+            setLessons(new Map(storedLessons));
+        } catch (err) {
+          console.warn("Couldn't parse stored lessons", err);
         }
-      } catch (err) {
-        console.warn("Couldn't parse stored lessons", err);
       }
     }
-
-    // generatePlaceholder('').then(setPlaceholder)
-  }, []);
-  const isUser = (message: any) => message.role === 'user'
+    handleSetStoredLessonsOnStartup()
+   
+return () => {
+  // on exit
+          const handleSetStoredLessonsOnExit = async () => {
+            await setData("lessons", JSON.stringify(Array.from(lessons.entries())));
+        }
+        handleSetStoredLessonsOnExit()
+  }
+}, [])
+  const isUser = (message: Message) => message.role === 'user'
   useEffect(() => {
     if(oldMessages.length && messages.length < oldMessages.length){
       setMessages(oldMessages)
@@ -72,7 +89,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!isGenerating) {
-      localStorage.setItem("lessons", JSON.stringify(Array.from(lessons.entries())));
+      setData("lessons", Array.from(lessons.entries()));
     }
   }, [lessons, isGenerating]);
 
@@ -117,13 +134,12 @@ export default function Chat() {
           <div className="mb-6 flex flex-col space-y-2">
             <Label htmlFor="topic">What topic do you want to learn?</Label>
             <div className="flex flex-row">
-              <DiceButton onClick={() => {
+              <DiceButton onClick={async () => {
                  try {
-                  const messagesLocal = localStorage.getItem("messages.") || '[]'
+                  const messagesLocal = await getData("messages.") || []
                 
-                  const chatMessages = JSON.parse(messagesLocal)
 
-                  generatePlaceholder(input, Array.isArray(chatMessages) ? chatMessages : []).then(val => {
+                  generatePlaceholder(input, Array.isArray(messagesLocal) ? messagesLocal : []).then(val => {
                     setPlaceholder(val)
                     setInput(val)
                   })
@@ -166,7 +182,7 @@ export default function Chat() {
                 </SelectTrigger>
                 <SelectContent className="max-h-[40vh] overflow-y-auto">
                   {Array.from(lessons.entries())
-                    .map(([key, _lesson]) => (
+                    .map(([key]) => (
                       <SelectItem key={key} value={key}>
                         {key}
                       </SelectItem>
@@ -184,7 +200,7 @@ export default function Chat() {
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (
-                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={(_existingChallenges: Challenge[]) => {
+                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
 handleGenerateMoreLessons(input)
                 }} />
