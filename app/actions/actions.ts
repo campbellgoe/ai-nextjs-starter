@@ -173,3 +173,31 @@ export async function generatePlaceholder(input: string | undefined, messages?: 
 
   return text;
 }
+
+export async function generateWebsite(prompt: string, type: "HTML" | "React" | "Next.js" = "HTML"): Promise<string> {
+  try {
+    const { text } = await generateText({
+      model: openai("gpt-4o"),
+      prompt: `
+        Generate a complete ${type} website based on this description: "${prompt}"
+        
+        Requirements:
+        - Use Tailwind CSS (it will be included via CDN)
+        - Create a responsive design that works on mobile and desktop
+        - Include realistic placeholder content
+        - Only return the ${type} code, no explanations
+        - Do not include <!DOCTYPE>, <html>, <head>, or <body> tags
+        - Make sure all elements have proper accessibility attributes
+        - Use semantic ${type} elements
+      `,
+      temperature: 0.7,
+      maxTokens: 4000,
+    })
+
+    return text
+  } catch (error) {
+    console.error("Error generating website:", error)
+    throw new Error("Failed to generate website. Please try again.")
+  }
+}
+

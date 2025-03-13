@@ -23,6 +23,9 @@ export default function Navigation() {
               <NavLink href="/code-challenges" active={pathname === "/code-challenges"}>
                 Challenges
               </NavLink>
+              <NavLink href="/inspiration-designer" active={pathname === "/inspiration-designer"}>
+                Inspire Website Designer
+              </NavLink>
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
