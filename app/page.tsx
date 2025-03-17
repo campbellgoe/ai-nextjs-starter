@@ -5,7 +5,7 @@ import {  Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils/lib';
 import { Delete } from 'lucide-react';
 import { getData, setData } from '@/contexts/datasource';
 // This is the only place InitializedMDXEditor is imported directly.

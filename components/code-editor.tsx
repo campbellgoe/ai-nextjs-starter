@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Copy, Check, Download } from "lucide-react"
 import type { FrameworkType } from "./website-builder"
+import { getHtmlContent } from "@/utils/getCompleteCodeFromGeneratedCode"
 
 interface CodeEditorProps {
   code: string
@@ -20,7 +21,7 @@ export function CodeEditor({ code, onChange, framework }: CodeEditorProps) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    setValue(code)
+    setValue(getHtmlContent("html", code))
   }, [code])
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

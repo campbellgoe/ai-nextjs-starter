@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { generateWebsite } from "@/app/actions"
+import { generateWebsite } from "@/app/websiteGeneratorActions"
 import { WebsitePreview } from "@/components/website-preview"
 import { CodeEditor } from "@/components/code-editor"
 import { Loader2 } from "lucide-react"
@@ -50,11 +50,19 @@ export function WebsiteBuilder() {
               </SelectContent>
             </Select>
           </div>
-
+          <div className="mb-2">
+          <label className="block text-sm font-medium mb-2">Your Prompt</label>
           <Textarea
             placeholder="Describe the website you want to build (e.g., 'A modern portfolio website for a photographer with a dark theme, gallery section, and contact form')"
             value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
+            // onChange={(e) => setPrompt(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              const v = e.target.value
+              setPrompt(v)
+              if(v === ' ' || v === '   '){
+                setPrompt('A modern portfolio website for a photographer with a dark theme, gallery section, and contact form')
+              }
+            }}
             className="min-h-[120px] mb-4"
           />
           <Button onClick={handleGenerate} className="w-full" disabled={isGenerating || !prompt.trim()}>
@@ -67,6 +75,7 @@ export function WebsiteBuilder() {
               "Generate Website"
             )}
           </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -14,3 +14,4 @@ export function slugify(str: string) {
     .replace(/[^\w\-]+/g, '') // Remove all non-word characters except for -
     .replace(/\-\-+/g, '-') // Replace multiple - with single -
 }
+
