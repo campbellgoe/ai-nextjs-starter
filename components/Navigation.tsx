@@ -51,12 +51,24 @@ export default function Navigation() {
       {/* Mobile menu, show/hide based on menu state */}
       <div className="sm:hidden">
         <div className="pt-2 pb-3 space-y-1">
-          <MobileNavLink href="/" active={pathname === "/"}>
+
+
+
+
+
+        <MobileNavLink href="/" active={pathname === "/"}>
             Chat
           </MobileNavLink>
           <MobileNavLink href="/code-challenges" active={pathname === "/code-challenges"}>
             Challenges
           </MobileNavLink>
+        <MobileNavLink href="/website-generator" active={pathname === "/website-generator"}>
+                Website Generator
+              </MobileNavLink>
+              <MobileNavLink href="/code-analyser" active={pathname === "/code-analyser"}>
+                Code Analyser
+              </MobileNavLink>
+         
         </div>
       </div>
     </nav>

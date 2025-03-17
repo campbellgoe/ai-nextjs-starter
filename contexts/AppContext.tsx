@@ -81,7 +81,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [experiencePoints, setExpPoints] = useState(0)
   const [hasCollectedExp, setHasCollectedExp] = useState(false)
-  const [localCodeKey, setLocalCodeKey] = useState(null)
+  const [localCodeKey, setLocalCodeKey] = useState("code.userAttempt.")
   useEffect(() => {
     const handler = async () => {
       const localExp: number = await getData("experiencePoints") || 0
