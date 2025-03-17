@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
-// @ts-expect-error prismjs problems
+// @ts-ignore
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
@@ -32,8 +32,7 @@ export interface Challenge {
 }
 
 interface LessonData {
-  questionOrChallenge: string;
-  topic: string;
+  challenge: string;
   language: string;
   hintInfo: string;
   challenges: Challenge[];
@@ -57,7 +56,7 @@ const challengeText = challenge?.challenge;
   const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
   const [challengeHelpInfoUser, challengeHelpInfoSolution] = [challenge?.codeExamplesIncomplete?.hintInfo, challenge?.codeComplete?.hintInfo]
   const [yourAttemptCode, setYourCode] = useState(
-    ''
+    '// code goes here'
   );
   const isCode = (codeProblemHTML && codeSolutionHTML)
   const promptForCorrectnessFeedback = `User attempt code:
@@ -69,18 +68,18 @@ ${challenge.hintInfo}
 `
   const correctnessFeedback = correctness.get(promptForCorrectnessFeedback)
 const maxTries = 2
-const myLocalCodeKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
+const codeUserAttemptKey = useMemo(() => "code.userAttempt."+challengeText,[challengeText]) 
 useEffect(() => {
-  if(myLocalCodeKey != localCodeKey){
-    setLocalCodeKey(myLocalCodeKey)
+  if(!localCodeKey && localCodeKey != codeUserAttemptKey){
+    setLocalCodeKey(codeUserAttemptKey)
   }
-}, [myLocalCodeKey])
+}, [codeUserAttemptKey,localCodeKey])
   useEffect(() => {
     
     try {
       const handleGetStoredCode = async () => {
-        if(myLocalCodeKey){
-        return await getData(myLocalCodeKey) || ''
+        if(codeUserAttemptKey){
+        return await getData(codeUserAttemptKey) || ''
         }
         return ''
       }
@@ -88,14 +87,14 @@ useEffect(() => {
         if(!!storedCode){
           setYourCode(storedCode)
         } else {
-          setYourCode(problem === solution ? '' : problem)
+          // setYourCode(problem === solution ? '' : problem)
         }
       })
     } catch(err: any){
 console.warn(err)
     }
     
-  }, [myLocalCodeKey, problem, solution])
+  }, [codeUserAttemptKey])
   const [nTries, setNTries] = useState(0)
 
   useEffect(() => {
@@ -144,31 +143,25 @@ console.warn(err)
   }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness])
 
   const handleGenerateCorrectness = async (input: string) => {
+    const correctnessKey = input
     setIsGeneratingCorrectness(true);
-    const { data } = await generateCorrectness(input);
-    
-    for await (const partialObject of readStreamableValue(data)) {
-      if (partialObject && partialObject.correctness) {
-        const newCorrectness = partialObject.correctness
-        setCorrectness(prevCorrectness => {
-          const updatedCorrectness = new Map(prevCorrectness);
-          updatedCorrectness.clear()
-          updatedCorrectness.set(input, newCorrectness);
-          return updatedCorrectness;
-        });
-      }
-    }
+    const object = await generateCorrectness(input);
+    setCorrectness(correctness => {
+      const correctness2 = correctness
+      correctness2.set(correctnessKey, {...correctness2.get(correctnessKey), ...object.correctness})
+      return new Map(correctness2)
+    })
     setIsGeneratingCorrectness(false);
   };
   
   useEffect(() => {
     if(yourAttemptCode){
       const handleSetCodeAttempt = async () => {
-        await setData(myLocalCodeKey, yourAttemptCode)
+        await setData(codeUserAttemptKey, yourAttemptCode)
       }
       handleSetCodeAttempt()
     }
-  }, [myLocalCodeKey, yourAttemptCode])
+  }, [codeUserAttemptKey, yourAttemptCode])
   const allowGetExpLock = useRef(false)
   const [enabledGetExp, setEnabledGetExp] = useState(false)
   useEffect(() => {
@@ -183,17 +176,17 @@ console.warn(err)
       // setEnabledGetExp(true)
       // setExpPoints((n: number) => n+10 : 0)
     }
-  }, [correctnessFeedback, allowGetExpLock, setExpPoints, myLocalCodeKey, hasCollectedExp])
+  }, [correctnessFeedback, allowGetExpLock, setExpPoints, codeUserAttemptKey, hasCollectedExp])
   
   const handleGetExp = useCallback((exp: number = 10) => {
     const handler = async () => {
-      if(!hasCollectedExp) await setData(myLocalCodeKey+".hasCollectedExp", true)
+      if(!hasCollectedExp) await setData(codeUserAttemptKey+".hasCollectedExp", true)
       if(typeof exp == 'number' && exp > 0) await setData("experiencePoints", experiencePoints+exp)
       setExpPoints((e: number) => e + exp)
       setHasCollectedExp(true)
     }
     handler()
-  }, [myLocalCodeKey, hasCollectedExp, experiencePoints])
+  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints])
   
   return (
     <Card className="mt-4">
@@ -214,10 +207,10 @@ console.warn(err)
         </>}
         {isCode && <>
           <>
-            <Label htmlFor="code-solution">Type your solution below:</Label>
+            <Label htmlFor="code-solution">Type your answer below:</Label>
             <Editor
               id="code-solution"
-              placeholder="solution goes here"
+              placeholder="your answer goes here"
               value={yourAttemptCode}
               onValueChange={(code: string) => {
                 setYourCode(code)
@@ -226,7 +219,8 @@ console.warn(err)
               padding={10}
               style={{
                 fontFamily: '"Fira code", "Fira Mono", monospace',
-                fontSize: 12,
+                fontSize: 16,
+
               }}
             />
             <Button
@@ -244,7 +238,7 @@ console.warn(err)
             <div className="mt-2 p-4 bg-gray-100 rounded">
               <label>Feedback:</label>
               {isGeneratingCorrectness ? 'Generating Feedback...' : null}
-              <p>{!correctnessFeedback?.feedback && (correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.')}</p>
+              <p>{!!correctnessFeedback?.feedback && (correctnessFeedback?.correct ? 'Well done, Correct!' : 'Update your answer and try again.')}</p>
               <p>{correctnessFeedback?.feedback}</p>
               {!correctnessFeedback?.correct && nTries >= maxTries && <Button
                 onClick={() => {
@@ -254,7 +248,7 @@ console.warn(err)
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
+              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 && !hasCollectedExp ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
                 if(enabledGetExp && !hasCollectedExp && allowGetExpLock.current === true){
                   handleGetExp(correctnessFeedback.expPointsWon)
                   allowGetExpLock.current = false
@@ -282,15 +276,14 @@ console.warn(err)
   );
 };
 
-export const LessonsContent: React.FC<{ isGenerating: boolean, input: string, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges , input, isGenerating}) => {
-  return (lessonsData?.map(lessonData => (
-    <div key={lessonData.questionOrChallenge || lessonData?.challenges?.map(a => a?.challenge).join(", ")}>
-      <h2 className="text-2xl font-bold mb-4">{lessonData.topic}</h2>
-      <h3 className="text-xl font-bold mb-4">{lessonData.questionOrChallenge}</h3>
+export const LessonsContent: React.FC<{ isGenerating: boolean, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges, isGenerating}) => {
+  return (lessonsData?.map((lessonData, index) => (
+    <div key={lessonData.challenge || "challenge-"+index}>
+      <h2 className="text-2xl font-bold mb-4">{lessonData.challenge}</h2>
       <p className="mb-6">{lessonData.hintInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>
       {lessonData?.challenges?.map((challenge: Challenge, index: number) => (
-        <ChallengeCard input={input} key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
+        <ChallengeCard key={index} challenge={challenge} language={lessonData?.language.toLowerCase()} />
       ))}
       {!isGenerating && <Button className="mt-4" onClick={() => {
         generateMoreChallenges(lessonData?.challenges)

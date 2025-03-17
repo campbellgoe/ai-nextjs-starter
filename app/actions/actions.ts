@@ -1,6 +1,6 @@
 'use server';
 
-import { streamObject, generateText, Message, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata } from 'ai';
+import { streamObject, generateText, Message, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata, generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { createStreamableValue } from 'ai/rsc';
 import { z } from 'zod';
@@ -46,7 +46,7 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O
   schema: z.object({
     lessons: z.array(z.object({
       timestamp: z.string().describe('The timestamp of the lesson'),
-      questionOrChallenge: z.string().describe('The questionOrChallenge for the lesson'),
+      challenge: z.string().describe('The challenge for the lesson'),
       language: z.string().describe('The language e.g. code or spoken language.'),
       hintInfo: z.string().describe('A hint toward the solution. Detailed and helpful information about the questionOrChallenge to make the learners life easier. Don\'t worry if you give the answer away but try to only hint at the solution.'),
       challenges: z.array(z.object({
@@ -85,7 +85,8 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
       correctAnswerCode: z.string().describe('The correct answer code in the language.'),
       expPointsWon: z.number().describe('number of experience points the player won as a result of getting it correct')
     })
-  })
+  }),
+  maxTokens: 3000,
 })
 const paramsGenerateProgrammingLanguages = (model: keyof typeof models = GPT_4O, temperature: number = 0.7) => ({
   model: model in models ? models[model] : models[GPT_4O],
@@ -144,19 +145,12 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
   // const details = {
   //   questionOrChallenge, language
   // }
-  const stream = createStreamableValue();
-
-  (async () => {
-    const { partialObjectStream } = streamObject(paramsDetermineAndRespondWithCorrectnessFeedback(correctAndUserCodesInput));
-
-    for await (const partialObject of partialObjectStream) {
-      stream.update(partialObject);
-    }
-
-    stream.done();
-  })();
-
-  return { data: stream.value };
+  try {
+  const { object  } = await generateObject(paramsDetermineAndRespondWithCorrectnessFeedback(correctAndUserCodesInput));
+  return object
+  } catch(error){
+    return { correctness: null, message:(error as { message: string }).message, error }
+  }
 }
 
 
