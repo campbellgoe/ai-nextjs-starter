@@ -14,7 +14,7 @@ import { getData, setData } from '@/contexts/datasource';
 import { Message } from 'ai';
 
 // Allow streaming responses up to 45 seconds
-export const maxDuration = 45;
+export const maxDuration = 35;
 
 interface Lesson {
   Key?: string;
