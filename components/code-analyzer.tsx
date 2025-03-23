@@ -33,21 +33,21 @@ const LANGUAGES = [
 ]
 
 type AnalysisResult = {
-  bugs: Array<{
+  bugs?: Array<{
     description: string
     lineNumber?: number
     severity: "low" | "medium" | "high"
   }>
-  securityIssues: Array<{
+  securityIssues?: Array<{
     description: string
     lineNumber?: number
     severity: "low" | "medium" | "high"
   }>
-  improvements: Array<{
+  improvements?: Array<{
     description: string
     lineNumber?: number
   }>
-  fixedCode: string
+  fixedCode?: string
 }
 
 export function CodeAnalyzer() {
@@ -56,6 +56,7 @@ export function CodeAnalyzer() {
   const [language, setLanguage] = useState<string>("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  // const [results, setResults] = useState<AnalysisResult[]>([])
   const [activeTab, setActiveTab] = useState("bugs")
   const [reports, setReports] = useState(new Map())
   const [selectedReport, setSelectedReport] = useState('')
@@ -64,19 +65,13 @@ export function CodeAnalyzer() {
     const { data } = await generateCodeAnalysis(code, language);
 
     for await (const partialObject of readStreamableValue(data)) {
-      console.log('partial object', partialObject)
       if (partialObject && partialObject.report) {
-        const reportsData = reports.has(selectedReport || '') ? reports.get(selectedReport || '') || {} : {}
-        const newReports = {...reportsData, ...partialObject.report}
-        setReports(prevReports => {
-          const updatedReports = new Map(prevReports);
-          updatedReports.set(code, newReports);
-          return updatedReports;
-        });
-        setSelectedReport(code);
+        setResult(pr => ({...(pr || {}), ...partialObject.report}))
       }
     }
-    setResult(reports.get(selectedReport))
+    setSelectedReport(code+language);
+    // setResults(Array.from(reports))
+    // setResult(Array.from(reports)?.[0]?.[0])
     setIsAnalyzing(false);
   };
   const handleAnalyze = async () => {
@@ -163,45 +158,44 @@ export function CodeAnalyzer() {
         </div>
       </div>
 
-      {(result) && (
-        <Card className="p-4">
+      {result && (<Card className="p-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="bugs" className="flex items-center">
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                Bugs {result?.bugs.length ? `(${result.bugs.length})` : ""}
+                Bugs {result?.bugs?.length ? `(${result.bugs.length})` : ""}
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center">
                 <ShieldAlert className="mr-2 h-4 w-4" />
-                Security {result?.securityIssues.length ? `(${result.securityIssues.length})` : ""}
+                Security {result?.securityIssues?.length ? `(${result.securityIssues.length})` : ""}
               </TabsTrigger>
               <TabsTrigger value="improvements" className="flex items-center">
                 <Wrench className="mr-2 h-4 w-4" />
-                Improvements {result?.improvements.length ? `(${result.improvements.length})` : ""}
+                Improvements {result?.improvements?.length ? `(${result.improvements.length})` : ""}
               </TabsTrigger>
               <TabsTrigger value="fixed">Fixed Code</TabsTrigger>
             </TabsList>
 
             <TabsContent value="bugs" className="space-y-4">
-              {isAnalyzing && !result?.bugs.length && (
+              {isAnalyzing && !result?.bugs?.length && (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   <span>Analyzing bugs...</span>
                 </div>
               )}
-              {result?.bugs.length === 0 && !isAnalyzing && <div className="text-center p-4">No bugs detected!</div>}
-              {result?.bugs.map((bug, index) => (
+              {result?.bugs?.length === 0 && !isAnalyzing && <div className="text-center p-4">No bugs detected!</div>}
+              {result?.bugs?.map((bug: any, index: number) => (
                 <div key={index} className="border rounded-md p-3">
                   <div className="flex items-start">
-                    <AlertTriangle className={`h-5 w-5 mr-2 ${getSeverityColor(bug.severity)}`} />
+                    <AlertTriangle className={`h-5 w-5 mr-2 ${getSeverityColor(bug?.severity)}`} />
                     <div>
                       <div className="font-medium">
-                        {bug.lineNumber ? `Line ${bug.lineNumber}: ` : ""}
-                        <span className={getSeverityColor(bug.severity)}>
-                          {bug.severity.charAt(0).toUpperCase() + bug.severity.slice(1)} severity
+                        {bug?.lineNumber ? `Line ${bug?.lineNumber}: ` : ""}
+                        <span className={getSeverityColor(bug?.severity)}>
+                          {bug?.severity?.charAt(0)?.toUpperCase() + bug?.severity?.slice(1)} severity
                         </span>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{bug.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{bug?.description}</p>
                     </div>
                   </div>
                 </div>
@@ -209,24 +203,24 @@ export function CodeAnalyzer() {
             </TabsContent>
 
             <TabsContent value="security" className="space-y-4">
-              {isAnalyzing && !result?.securityIssues.length && (
+              {isAnalyzing && !result?.securityIssues?.length && (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   <span>Analyzing security issues...</span>
                 </div>
               )}
-              {result?.securityIssues.length === 0 && !isAnalyzing && (
+              {result?.securityIssues?.length === 0 && !isAnalyzing && (
                 <div className="text-center p-4">No security issues detected!</div>
               )}
-              {result?.securityIssues.map((issue, index) => (
+              {result?.securityIssues?.map((issue, index) => (
                 <div key={index} className="border rounded-md p-3">
                   <div className="flex items-start">
-                    <ShieldAlert className={`h-5 w-5 mr-2 ${getSeverityColor(issue.severity)}`} />
+                    <ShieldAlert className={`h-5 w-5 mr-2 ${getSeverityColor(issue?.severity)}`} />
                     <div>
                       <div className="font-medium">
-                        {issue.lineNumber ? `Line ${issue.lineNumber}: ` : ""}
-                        <span className={getSeverityColor(issue.severity)}>
-                          {issue.severity.charAt(0).toUpperCase() + issue.severity.slice(1)} severity
+                        {issue?.lineNumber ? `Line ${issue.lineNumber}: ` : ""}
+                        <span className={getSeverityColor(issue?.severity)}>
+                          {issue?.severity?.charAt(0)?.toUpperCase() + issue?.severity?.slice(1)} severity
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{issue.description}</p>
@@ -237,16 +231,16 @@ export function CodeAnalyzer() {
             </TabsContent>
 
             <TabsContent value="improvements" className="space-y-4">
-              {isAnalyzing && !result?.improvements.length && (
+              {isAnalyzing && !result?.improvements?.length && (
                 <div className="flex items-center justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin mr-2" />
                   <span>Finding improvements...</span>
                 </div>
               )}
-              {result?.improvements.length === 0 && !isAnalyzing && (
+              {result?.improvements?.length === 0 && !isAnalyzing && (
                 <div className="text-center p-4">No improvements suggested!</div>
               )}
-              {result?.improvements.map((improvement, index) => (
+              {result?.improvements?.map((improvement, index) => (
                 <div key={index} className="border rounded-md p-3">
                   <div className="flex items-start">
                     <Wrench className="h-5 w-5 mr-2" />
@@ -272,8 +266,7 @@ export function CodeAnalyzer() {
               {result?.fixedCode && <CodeBlock code={result.fixedCode} language={language} />}
             </TabsContent>
           </Tabs>
-        </Card>
-      )}
+        </Card>)}
     </div>
   )
 }
