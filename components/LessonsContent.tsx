@@ -3,14 +3,12 @@ import { Button } from "@/components/ui/button"
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
-// @ts-ignore
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
 import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/themes/prism.css'; //Example style, you can use another
 import confetti from 'canvas-confetti'
 import { generateCorrectness } from "@/app/actions/actions";
-import { readStreamableValue } from "ai/rsc";
 import { Label } from "./ui/label";
 import { useAppContext } from "@/contexts/AppContext";
 import { getData, setData } from "@/contexts/datasource";
@@ -31,7 +29,7 @@ export interface Challenge {
   }
 }
 
-interface LessonData {
+export interface Lesson {
   challenge: string;
   language: string;
   hintInfo: string;
@@ -73,7 +71,7 @@ useEffect(() => {
   if(!localCodeKey && localCodeKey != codeUserAttemptKey){
     setLocalCodeKey(codeUserAttemptKey)
   }
-}, [codeUserAttemptKey,localCodeKey])
+}, [codeUserAttemptKey,localCodeKey,setLocalCodeKey])
   useEffect(() => {
     
     try {
@@ -140,7 +138,7 @@ console.warn(err)
         
       }
     }
-  }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness])
+  }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness, correctnessFeedback?.correct])
 
   const handleGenerateCorrectness = async (input: string) => {
     const correctnessKey = input
@@ -186,7 +184,7 @@ console.warn(err)
       setHasCollectedExp(true)
     }
     handler()
-  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints])
+  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints, setExpPoints])
   
   return (
     <Card className="mt-4">
@@ -276,9 +274,9 @@ console.warn(err)
   );
 };
 
-export const LessonsContent: React.FC<{ isGenerating: boolean, lessonsData: LessonData[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges, isGenerating}) => {
+export const LessonsContent: React.FC<{ isGenerating: boolean, lessonsData: Lesson[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges, isGenerating}) => {
   return (lessonsData?.map((lessonData, index) => (
-    <div key={lessonData.challenge || "challenge-"+index}>
+    <div key={lessonData?.challenge || "challenge-"+index}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.challenge}</h2>
       <p className="mb-6">{lessonData.hintInfo}</p>
       <h3 className="text-xl font-semibold mb-4">Challenge</h3>

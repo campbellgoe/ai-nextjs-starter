@@ -6,7 +6,7 @@ import { readStreamableValue } from 'ai/rsc';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Challenge, LessonsContent } from '@/components/LessonsContent';
+import { Lesson, LessonsContent } from '@/components/LessonsContent';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
@@ -16,15 +16,6 @@ import { Message } from 'ai';
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 35;
 
-interface Lesson {
-  Key?: string;
-  questionOrChallenge: string;
-  topic: string;
-  language: string;
-  hintInfo: string;
-  challenges: Challenge[];
-  timestamp: number;
-}
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [selectedLessons, setSelectedLessons] = useState<string | null>(null);
@@ -75,7 +66,7 @@ return () => {
         }
         handleSetStoredLessonsOnExit()
   }
-}, [])
+}, [lessons])
   const isUser = (message: Message) => message.role === 'user'
   useEffect(() => {
     if(oldMessages.length && messages.length < oldMessages.length){
@@ -200,7 +191,7 @@ return () => {
           <Card className="bg-gray-50">
             <CardContent>
               {selectedLessons && lessonsData ? (
-                <LessonsContent input={input} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
+                <LessonsContent isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
 handleGenerateMoreLessons(input)
                 }} />

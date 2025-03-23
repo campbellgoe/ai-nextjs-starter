@@ -34,7 +34,7 @@ export default function ChatPage() {
       if(Array.isArray(messagesLocal)){
         setMessages(messagesLocal)
       }
-    },[])
+    },[setMessages])
   useEffect(() => {
       
     return () => {
