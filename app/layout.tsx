@@ -37,7 +37,7 @@ export default function RootLayout({
             </main>
           </>
         </AppProvider>
-        <footer className="p-8">Demo by <Link className="hover:underline hover:scale-105" href="https://massless.ltd">MASSLESS LTD.</Link> | All rights reserved | Copyright &copy; 2025</footer>
+        <footer className="p-8">Learn with AI App by <Link className="hover:underline hover:scale-105" href="https://massless.ltd">MASSLESS LTD.</Link> | All rights reserved | Copyright &copy; 2025</footer>
       </body>
     </html>
   );
