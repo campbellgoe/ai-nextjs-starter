@@ -237,10 +237,7 @@ export async function generateCodeAnalysis(code: string, language: string) {
       For improvements, suggest better patterns, performance optimizations, and code readability enhancements.
       Provide fixed code that addresses all the issues you've identified.`,
       prompt: `Analyze the following ${language} code and provide a detailed report:
-
-\`\`\`${language}
 ${code}
-\`\`\`
 
 Identify bugs, security issues, and potential improvements. Then provide a fixed version of the code.`,
       // onChunk: async ({ chunk }: any) => {
