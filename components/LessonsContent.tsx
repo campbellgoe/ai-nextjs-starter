@@ -71,7 +71,7 @@ useEffect(() => {
   if(!localCodeKey && localCodeKey != codeUserAttemptKey){
     setLocalCodeKey(codeUserAttemptKey)
   }
-}, [codeUserAttemptKey,localCodeKey,setLocalCodeKey])
+}, [codeUserAttemptKey])
   useEffect(() => {
     
     try {
@@ -138,7 +138,7 @@ console.warn(err)
         
       }
     }
-  }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness, correctnessFeedback?.correct])
+  }, [showFeedback, yourAttemptCode, solution, isGeneratingCorrectness])
 
   const handleGenerateCorrectness = async (input: string) => {
     const correctnessKey = input

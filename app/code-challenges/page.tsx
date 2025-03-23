@@ -22,7 +22,7 @@ export default function Chat() {
   const [messagesLocal, setMessagesLocal] = useState([])
   useEffect(() => {
     const handleGetLocalMessages = async (): Promise<[]> => {
-      const key = "messages."+selectedLessons
+      const key = "messages"
       return await getData(key) || []
     }
     handleGetLocalMessages().then((messages: []) => {
@@ -49,7 +49,7 @@ export default function Chat() {
   useEffect(() => {
     const handleSetStoredLessonsOnStartup = async () => {
       const storedLessons = await getData<[]>("lessons");
-      if (storedLessons) {
+      if (Array.isArray(storedLessons)) {
         try {
             setLessons(new Map(storedLessons));
         } catch (err) {
@@ -59,14 +59,17 @@ export default function Chat() {
     }
     handleSetStoredLessonsOnStartup()
    
-return () => {
-  // on exit
-          const handleSetStoredLessonsOnExit = async () => {
-            await setData("lessons", JSON.stringify(Array.from(lessons.entries())));
+    return () => {
+      // on exit
+      const handleSetStoredLessonsOnExit = async () => {
+        const existing: [] | null = await getData("lessons")
+        if(existing && lessons.size > existing.length) {
+          await setData("lessons", JSON.stringify(Array.from(lessons.entries())));
         }
-        handleSetStoredLessonsOnExit()
-  }
-}, [lessons])
+      }
+      handleSetStoredLessonsOnExit()
+    }
+  } , [])
   const isUser = (message: Message) => message.role === 'user'
   useEffect(() => {
     if(oldMessages.length && messages.length < oldMessages.length){
@@ -127,7 +130,7 @@ return () => {
             <div className="flex flex-row">
               <DiceButton onClick={async () => {
                  try {
-                  const messagesLocal = await getData("messages.") || []
+                  const messagesLocal = await getData("messages") || []
                 
 
                   generatePlaceholder(input, Array.isArray(messagesLocal) ? messagesLocal : []).then(val => {

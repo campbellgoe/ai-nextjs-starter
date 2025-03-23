@@ -30,20 +30,20 @@ export default function ChatPage() {
   }});
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
   useEffect(() => {
-    const messagesLocal = getData("messages.") || []
-      if(Array.isArray(messagesLocal)){
+    const handler = async () => {
+      const messagesLocal = await getData("messages") || []
+      if(Array.isArray(messagesLocal) && messagesLocal.length > messages.length){
         setMessages(messagesLocal)
       }
-    },[setMessages])
-  useEffect(() => {
-      
-    return () => {
-      const handleSetSavedMessagesOnExit = async () => {
-        await setData("messages.", messages)
-      }
-      handleSetSavedMessagesOnExit()
     }
-  }, [messages, setMessages])
+    handler()
+    return () => {
+      const handler = async () => {
+        await setData("messages", messages)
+      }
+      handler()
+    }
+  },[messages, setMessages])
   
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -68,6 +68,7 @@ export default function ChatPage() {
                       if(confirmed){
                         
                         setMessages((messages: Message[]) => messages.filter(a => a.id != m.id))
+                        
 
                       }
                     }}>Delete<Delete></Delete></Button>
