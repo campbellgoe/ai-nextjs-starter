@@ -58,8 +58,8 @@ export function CodeAnalyzer() {
   const [result, setResult] = useState<AnalysisResult | null>(null)
   // const [results, setResults] = useState<AnalysisResult[]>([])
   const [activeTab, setActiveTab] = useState("bugs")
-  const [reports, setReports] = useState(new Map())
-  const [selectedReport, setSelectedReport] = useState('')
+  // const [reports, setReports] = useState(new Map())
+  // const [selectedReport, setSelectedReport] = useState('')
   const handleGenerateCodeAnalysis = async (code: string, language: string) => {
     setIsAnalyzing(true);
     const { data } = await generateCodeAnalysis(code, language);
@@ -69,7 +69,7 @@ export function CodeAnalyzer() {
         setResult(pr => ({...(pr || {}), ...partialObject.report}))
       }
     }
-    setSelectedReport(code+language);
+    // setSelectedReport(code+language);
     // setResults(Array.from(reports))
     // setResult(Array.from(reports)?.[0]?.[0])
     setIsAnalyzing(false);

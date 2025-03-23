@@ -184,7 +184,7 @@ console.warn(err)
       setHasCollectedExp(true)
     }
     handler()
-  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints, setExpPoints])
+  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints, setExpPoints, setHasCollectedExp])
   
   return (
     <Card className="mt-4">
