@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { highlight } from 'sugar-high'
 import Editor from 'react-simple-code-editor';
 import { highlight as prismaHighlight, languages } from 'prismjs/components/prism-core';
@@ -38,7 +38,7 @@ export interface Lesson {
 }
 
 const ChallengeCard: React.FC<{ challenge: Challenge; language: string; }> = ({ challenge, language }) => {
-  const { localCodeKey, setLocalCodeKey, hasCollectedExp, setHasCollectedExp, setExpPoints, experiencePoints } = useAppContext()
+  const { localCodeKey, setLocalCodeKey, setExpPoints, experiencePoints } = useAppContext()
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSolution, setShowSolution] = useState(false)
   const [isGeneratingCorrectness, setIsGeneratingCorrectness] = useState(false);
@@ -173,7 +173,7 @@ console.warn(err)
       // setEnabledGetExp(true)
       // setExpPoints((n: number) => n+10 : 0)
     }
-  }, [correctnessFeedback, setExpPoints, codeUserAttemptKey, hasCollectedExp])
+  }, [correctnessFeedback, setExpPoints, codeUserAttemptKey])
   
   const handleGetExp = useCallback((exp: number = 10) => {
     const handler = async () => {
@@ -183,7 +183,7 @@ console.warn(err)
       // setHasCollectedExp(true)
     }
     handler()
-  }, [codeUserAttemptKey, hasCollectedExp, experiencePoints, setExpPoints, setHasCollectedExp])
+  }, [codeUserAttemptKey, experiencePoints, setExpPoints])
   
   return (
     <Card className="mt-4">
@@ -245,7 +245,7 @@ console.warn(err)
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
+              {correctnessFeedback?.correct ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
                 if(enabledGetExp){
                   handleGetExp(correctnessFeedback.expPointsWon)
                  // allowGetExpLock.current = false
