@@ -14,7 +14,7 @@ export default function Navigation() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               {/* You can add a logo here */}
-              <span className="text-2xl font-bold text-primary">Learn with AI</span>
+              <Link href="/"><span className="text-2xl font-bold text-primary">Learn with AI²</span></Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               <NavLink href="/" active={pathname === "/"}>
@@ -31,7 +31,7 @@ export default function Navigation() {
               </NavLink>
             </div>
           </div>
-          {pathname === "/code-challenges" && <>
+          {pathname === "/code-challenges" && experiencePoints > 0 && <>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               {/* You can add user menu or other items here */}
               <span className="hover:underline hover:scale-105"><Button onClick={() => {
