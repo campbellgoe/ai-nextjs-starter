@@ -21,8 +21,6 @@ export type AppContextType = {
   setUserClientSettings: (settings: any) => void
   experiencePoints: number;
   setExpPoints:any;
-  hasCollectedExp: boolean;
-  setHasCollectedExp: any;
   localCodeKey: string | null;
   setLocalCodeKey: any;
 }
@@ -80,38 +78,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   })
 
   const [experiencePoints, setExpPoints] = useState(0)
-  const [hasCollectedExp, setHasCollectedExp] = useState(false)
   const [localCodeKey, setLocalCodeKey] = useState("code.userAttempt.")
+
   useEffect(() => {
-    const handler = async () => {
-      const localExp: number = await getData("experiencePoints") || 0
-      if(localExp > experiencePoints){
-        setExpPoints(localExp)
-        await setData(localCodeKey+".hasCollectedExp", true)
-      //  await setData(localCodeKey+".experiencePoints", experiencePoints)
-      } else {
-        // alert("exp ")
+    let exp = 0
+    const loadHandler = async () => {
+      exp = await getData<number>("experiencePoints") || 0
+      if(exp){
+        setExpPoints(exp)
       }
+      
     }
-    handler()
+    loadHandler()
   }, [])
   useEffect(() => {
-    const handler = async () => {
-      if(localCodeKey){
-        const localHasCollectedExp: boolean | null = await getData(localCodeKey+".hasCollectedExp")
-        //
-
-        const localExpPoints: number = await getData("experiencePoints") || 0
-        if(localExpPoints > experiencePoints){
-          setExpPoints(localExpPoints || 10)
-          if(localHasCollectedExp) setHasCollectedExp(true)
-        }
-      }
+    const saveHandler = async () => {
+      if(experiencePoints > 0) await setData("experiencePoints", experiencePoints)
     }
-    handler()
-  }, [localCodeKey, experiencePoints])
+    saveHandler()
+  } ,[experiencePoints])
+
   return (
-    <AppContext.Provider value={{ localCodeKey, setLocalCodeKey, hasCollectedExp, setHasCollectedExp, userClientSettings, setUserClientSettings, experiencePoints, setExpPoints }}>
+    <AppContext.Provider value={{ localCodeKey, setLocalCodeKey, userClientSettings, setUserClientSettings, experiencePoints, setExpPoints }}>
       {children}
     </AppContext.Provider>
   )

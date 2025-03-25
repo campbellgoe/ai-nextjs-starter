@@ -160,28 +160,27 @@ console.warn(err)
       handleSetCodeAttempt()
     }
   }, [codeUserAttemptKey, yourAttemptCode])
-  const allowGetExpLock = useRef(false)
-  const [enabledGetExp, setEnabledGetExp] = useState(false)
+  const [enabledGetExp, setEnabledGetExp] = useState<boolean>(false)
   useEffect(() => {
     if(correctnessFeedback && correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0) {
-      allowGetExpLock.current = true;
       
       // TODO: only enable get exp if they haven't already collected it
       //if(!hasCollectedExp){
+
         setEnabledGetExp(true)
      // }
       
       // setEnabledGetExp(true)
       // setExpPoints((n: number) => n+10 : 0)
     }
-  }, [correctnessFeedback, allowGetExpLock, setExpPoints, codeUserAttemptKey, hasCollectedExp])
+  }, [correctnessFeedback, setExpPoints, codeUserAttemptKey, hasCollectedExp])
   
   const handleGetExp = useCallback((exp: number = 10) => {
     const handler = async () => {
-      if(!hasCollectedExp) await setData(codeUserAttemptKey+".hasCollectedExp", true)
-      if(typeof exp == 'number' && exp > 0) await setData("experiencePoints", experiencePoints+exp)
+      // if(!hasCollectedExp) await setData(codeUserAttemptKey+".hasCollectedExp", true)
+      // if(typeof exp == 'number' && exp > 0) await setData("experiencePoints", experiencePoints+exp)
       setExpPoints((e: number) => e + exp)
-      setHasCollectedExp(true)
+      // setHasCollectedExp(true)
     }
     handler()
   }, [codeUserAttemptKey, hasCollectedExp, experiencePoints, setExpPoints, setHasCollectedExp])
@@ -246,11 +245,11 @@ console.warn(err)
               >
                 {showSolution ? 'Hide Solution' : 'See Solution'}
               </Button>}
-              {correctnessFeedback?.correct && correctnessFeedback?.expPointsWon > 0 && !hasCollectedExp ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
-                if(enabledGetExp && !hasCollectedExp && allowGetExpLock.current === true){
+              {correctnessFeedback?.correct ? <div>That was worth {correctnessFeedback.expPointsWon} exp. points. {(enabledGetExp && !hasCollectedExp) && <Button className="hover:underline hover:scale-105" onClick={async () => {
+                if(enabledGetExp){
                   handleGetExp(correctnessFeedback.expPointsWon)
-                  allowGetExpLock.current = false
-                  setEnabledGetExp(false)
+                 // allowGetExpLock.current = false
+                 setEnabledGetExp(false)
                 } else {
                   alert("Something went wrong getting your exp. or you already received it.")
                  // setEnabledGetExp(false)
