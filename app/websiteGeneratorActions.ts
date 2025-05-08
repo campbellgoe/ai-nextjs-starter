@@ -7,11 +7,11 @@ import type { FrameworkType } from "@/components/website-builder"
 export async function generateWebsite(prompt: string, framework: FrameworkType): Promise<string> {
   try {
     const promptTemplate = getPromptTemplate(framework)
-console.log("The current server time is "+((new Date()).toDateString()))
+// console.log("The current server time is "+((new Date()).toDateString()))
     const { text } = await generateText({
       model: openai("gpt-4o"),
-      system: "The current server time is "+((new Date()).toDateString()),
-      prompt: promptTemplate.replace("{PROMPT}", prompt),
+      system: `You are a website generator. The current server time is ${((new Date()).toDateString())}`,
+      prompt: promptTemplate.replaceAll("{PROMPT}", prompt),
       temperature: 0.7,
       maxTokens: 4000,
     })

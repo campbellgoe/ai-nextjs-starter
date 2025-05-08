@@ -1,6 +1,6 @@
 import { CodeAnalyzer } from "@/components/code-analyzer"
 export const maxDuration = 45;
-export default function Home() {
+export default function CodeAnalyserPage() {
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-4xl font-bold mb-6">Code Analyzer</h1>
