@@ -64,7 +64,7 @@ export default function ChatPage() {
                 <CardHeader className="py-2">
                   <CardTitle className="text-sm font-medium">
                     {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)} <Button className="mt-4" onClick={() => {
-                      const confirmed = confirm("Delete "+m.content.slice(0, 30)+"...?")
+                      const confirmed = confirm("Delete "+m.content.slice(0, 30)+"?")
                       if(confirmed){
                         
                         setMessages((messages: Message[]) => messages.filter(a => a.id != m.id))

@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { getData, setData } from './datasource'
-import { redirect } from 'next/navigation'
 
 export type User = {
   name: string,
