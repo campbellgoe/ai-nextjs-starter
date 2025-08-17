@@ -273,8 +273,10 @@ console.warn(err)
   );
 };
 
-export const LessonsContent: React.FC<{ isGenerating: boolean, lessonsData: Lesson[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, generateMoreChallenges, isGenerating}) => {
-  return (lessonsData?.map((lessonData, index) => (
+export const LessonsContent: React.FC<{ isGenerating: boolean, offsetIndex: number, lessonsData: Lesson[], generateMoreChallenges: (challenges: Challenge[]) => void }> = ({ lessonsData, offsetIndex = 0, generateMoreChallenges, isGenerating}) => {
+  return (lessonsData?.filter((_, i) => {
+    return Math.abs(i - offsetIndex) < 1
+  }).map((lessonData, index) => (
     <div key={lessonData?.challenge || "challenge-"+index}>
       <h2 className="text-2xl font-bold mb-4">{lessonData.challenge}</h2>
       <p className="mb-6">{lessonData.hintInfo}</p>
