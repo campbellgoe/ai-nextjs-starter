@@ -54,7 +54,7 @@ const challengeText = challenge?.challenge;
   const codeSolutionExtraHTML = solutionExtra ? highlight(solutionExtra) : ''
   const [challengeHelpInfoUser, challengeHelpInfoSolution] = [challenge?.codeExamplesIncomplete?.hintInfo, challenge?.codeComplete?.hintInfo]
   const [yourAttemptCode, setYourCode] = useState(
-    '// code goes here'
+    '[answer goes here]'
   );
   const isCode = (codeProblemHTML && codeSolutionHTML)
   const promptForCorrectnessFeedback = `User attempt code:
@@ -85,7 +85,7 @@ useEffect(() => {
         if(!!storedCode){
           setYourCode(storedCode)
         } else {
-          // setYourCode(problem === solution ? '' : problem)
+          setYourCode(problem)
         }
       })
     } catch(err: any){

@@ -7,12 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Lesson, LessonsContent } from '@/components/LessonsContent';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
 import { getData, setData } from '@/contexts/datasource';
 import { Message } from 'ai';
-import { filter } from '@mdxeditor/editor';
 
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 35;
@@ -119,10 +118,10 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
   const removeLesson = (prompt: string) => {
     setLessons(prevLessons => {
       const updatedLessons = new Map(prevLessons);
-      updatedLessons.delete(prompt);
+      updatedLessons.set(prompt, []);
       return updatedLessons;
     });
-    setSelectedLessons
+    // setSelectedLessons()
   }
   const [offsetIndex, setOffsetIndex] = useState<number>(0)
 
@@ -164,7 +163,10 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
               />
             </div>
             <Button 
-              onClick={() => handleGenerateLessons(input)}
+              onClick={() => {
+                handleGenerateLessons(input)
+                setOffsetIndex(lessonsData.length)
+              }}
               disabled={isGenerating || !input.trim()}
             >
               {isGenerating ? 'Generating...' : 'Generate Challenges'}
@@ -218,6 +220,7 @@ setOffsetIndex(i => i-1)
                 <LessonsContent offsetIndex={offsetIndex} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
 handleGenerateMoreLessons(input)
+setOffsetIndex(lessonsData.length)
                 }} />
               )}
               
