@@ -1,14 +1,10 @@
 'use server';
 
-import { streamObject, generateText, Message, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata, generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import { createStreamableValue } from 'ai/rsc';
+import { streamText, generateText, ModelMessage, CallWarning, LanguageModelResponseMetadata, LanguageModelUsage, ProviderMetadata, Output } from 'ai';
 import { z } from 'zod';
-const GPT_4O = 'gpt-4o'
-const GPT_4O_MINI = 'gpt-4o-mini'
+const GPT = 'gpt'
 const models = {
-  [GPT_4O_MINI]: openai(GPT_4O_MINI),
-  [GPT_4O]: openai(GPT_4O),
+  [GPT]: 'openai/gpt-oss-120b',
 }
 export type OnFinishCallback = {
     /**
@@ -38,12 +34,12 @@ export type OnFinishCallback = {
   */
     experimental_providerMetadata: ProviderMetadata | undefined;
 }
-const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O, prompt: string, temperature: number = 0.7, system: string = "") => ({
-  model: model in models ? models[model] : models[GPT_4O], // user can set the model for this query but defaults to gpt-4o
+const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT, prompt: string, temperature: number = 0.7, system: string = "") => ({
+  model: model in models ? models[model] : models[GPT], // user can set the model for this query but defaults to gpt-4o
     system: 'You generate *lessons* and *challenges* for an education app to learn what they want, you can set (code using specific programming languages or simply in a spoken language as a challenge) challenges. Make sure to make the code questionStarter one iteration before or different from the final complete solution.\nUser instructions for system:\n'+system,
   prompt,
   temperature,
-  schema: z.object({
+  output: Output.object({ schema: z.object({
     lessons: z.array(z.object({
       timestamp: z.string().describe('The timestamp of the lesson'),
       challenge: z.string().describe('The challenge for the lesson'),
@@ -65,7 +61,7 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O
         })
       }))
     })),
-  }),
+  })}),
   onFinish({ usage }: { usage: LanguageModelUsage } ) {
     console.log('Token usage:', usage);
     
@@ -73,11 +69,11 @@ const paramsGenerateLessonsWithChallenges = (model: keyof typeof models = GPT_4O
 })
 // acceptable prompts include the question or challenge, the hint info, the example correct code, and the user code in a single string of characters
 const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temperature: number = 0.7) => ({
-  model: models[GPT_4O],// was gpt-4o but mini should be cheaper for now
+  model: models[GPT],// was gpt-4o but mini should be cheaper for now
   system: 'You generate *correctness* feedback for the user code and the question, hint info, and the example correct code. Acceptable answers must solve the problem posed in the question/challenge and alternatives to the solution may be allowed. You provide the correct answer and the feedback on the users code. Example feedback could be "Correct, you provided an alternative solution." or "Incorrect, but you are close." or Correct! Our solutions match!" or "Incorrect, hint:...". or "Correct! Close enough!". Good feedback is concise and to the point and helps the user understand how to solve the given problem.',
   prompt,
   temperature,
-  schema: z.object({
+  output: Output.object({ schema: z.object({
     correctness: z.object({
       correct: z.boolean().describe('Whether the user code is correct or not.'),
       confidence: z.number().describe('The confidence level of the correctness feedback.'),
@@ -85,34 +81,24 @@ const paramsDetermineAndRespondWithCorrectnessFeedback = (prompt: string, temper
       correctAnswerCode: z.string().describe('The correct answer code in the language.'),
       expPointsWon: z.number().describe('number of experience points the player won as a result of getting it correct')
     })
-  }),
+  })}),
   maxTokens: 3000,
 })
-const paramsGenerateProgrammingLanguages = (model: keyof typeof models = GPT_4O, temperature: number = 0.7) => ({
-  model: model in models ? models[model] : models[GPT_4O],
+const paramsGenerateProgrammingLanguages = (model: keyof typeof models = GPT, temperature: number = 0.7) => ({
+  model: model in models ? models[model] : models[GPT],
+  output: Output.object({ schema: z.array(z.object({
+    language: z.string().describe('The programming language'),
+  })) }),
   system: 'You generate a list of programming languages so the user can become aware of them and will render the list in an accordion.',
   prompt: "List all programming languages you know by relevance or popularity enhaustively.",
   temperature,
-  schema: z.array(z.object({
-    language: z.string().describe('The programming language'),
-  }))
+  
 });
 export async function generateProgrammingLanguages(temperature: number = 0.7) {
   'use server';
-  
-  const stream = createStreamableValue();
+    const result = streamText(paramsGenerateProgrammingLanguages(GPT, temperature));
 
-  (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateProgrammingLanguages(GPT_4O, temperature));
-
-    for await (const partialObject of partialObjectStream) {
-      stream.update(partialObject);
-    }
-
-    stream.done();
-  })();
-
-  return { data: stream.value };
+   return result.toTextStreamResponse();
 }
 export async function generateLessons(input: string, temperature: number = 0.7) {
   'use server';
@@ -122,19 +108,11 @@ export async function generateLessons(input: string, temperature: number = 0.7) 
   // const details = {
   //   questionOrChallenge, language
   // }
-  const stream = createStreamableValue();
 
-  (async () => {
-    const { partialObjectStream } = streamObject(paramsGenerateLessonsWithChallenges(GPT_4O, input, temperature, ""));
+  
+  const result = streamText(paramsGenerateLessonsWithChallenges(GPT, input, temperature, ""));
 
-    for await (const partialObject of partialObjectStream) {
-      stream.update(partialObject);
-    }
-
-    stream.done();
-  })();
-
-  return { data: stream.value };
+   return result.toTextStreamResponse();
 }
 
 export async function generateCorrectness(correctAndUserCodesInput: string) {
@@ -146,17 +124,17 @@ export async function generateCorrectness(correctAndUserCodesInput: string) {
   //   questionOrChallenge, language
   // }
   try {
-  const { object  } = await generateObject(paramsDetermineAndRespondWithCorrectnessFeedback(correctAndUserCodesInput));
-  return object
+    const result = await streamText(paramsDetermineAndRespondWithCorrectnessFeedback(correctAndUserCodesInput));
+    return result.toTextStreamResponse();
   } catch(error){
     return { correctness: null, message:(error as { message: string }).message, error }
   }
 }
 
 
-export async function generatePlaceholder(input: string | undefined, messages?: Message[]) {
+export async function generatePlaceholder(input: string | undefined, messages?: ModelMessage[]) {
   const { text } = await generateText({
-    model: models[GPT_4O_MINI],
+    model: models[GPT],
     temperature: 0.7,
     messages: [
       ...(messages || []),
@@ -171,7 +149,7 @@ export async function generatePlaceholder(input: string | undefined, messages?: 
 export async function generateWebsite(prompt: string, type: "HTML" | "React" | "Next.js" = "HTML"): Promise<string> {
   try {
     const { text } = await generateText({
-      model: openai("gpt-4o"),
+      model: models[GPT],
       prompt: `
         Generate a complete ${type} website based on this description: "${prompt}"
         
@@ -185,7 +163,6 @@ export async function generateWebsite(prompt: string, type: "HTML" | "React" | "
         - Use semantic ${type} elements
       `,
       temperature: 0.7,
-      maxTokens: 4000,
     })
 
     return text
@@ -196,68 +173,4 @@ export async function generateWebsite(prompt: string, type: "HTML" | "React" | "
 }
 
 
-// Define the schema for our analysis result
-const analysisResultSchema = () => z.object({
-  report: z.object({
-    bugs: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-        severity: z.enum(["low", "medium", "high"]),
-      }),
-    ),
-    securityIssues: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-        severity: z.enum(["low", "medium", "high"]),
-      }),
-    ),
-    improvements: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-      }),
-    ),
-    fixedCode: z.string(),
-  })
-})
-
-export async function generateCodeAnalysis(code: string, language: string) {
-  const stream = createStreamableValue();
-
-  (async () => {
-    const { partialObjectStream } = streamObject({
-      model: openai("gpt-4o"),
-      schema: analysisResultSchema(),
-      system: `You are an expert code analyzer. Analyze the provided code for bugs, security issues, and potential improvements.
-      Be thorough but concise in your analysis. Focus on practical issues that would affect production code.
-      For security issues, consider common vulnerabilities like injection attacks, authentication issues, etc.
-      For bugs, look for logical errors, edge cases, and potential runtime exceptions.
-      For improvements, suggest better patterns, performance optimizations, and code readability enhancements.
-      Provide fixed code that addresses all the issues you've identified.`,
-      prompt: `Analyze the following ${language} code and provide a detailed report:
-${code}
-
-Identify bugs, security issues, and potential improvements. Then provide a fixed version of the code.`,
-      // onChunk: async ({ chunk }: any) => {
-      //   if (chunk.type === "object-delta") {
-      //     // Convert the chunk to a JSON string and send it to the client
-      //     const encoder = new TextEncoder()
-      //     controller.enqueue(encoder.encode(JSON.stringify(chunk.delta)))
-      //   }
-      // },
-      onFinish: async () => {
-      },
-    });
-
-    for await (const partialObject of partialObjectStream) {
-      stream.update(partialObject);
-    }
-
-    stream.done();
-  })();
-
-  return { data: stream.value };
-}
 

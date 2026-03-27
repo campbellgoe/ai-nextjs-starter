@@ -1,19 +1,18 @@
 "use server"
 
 import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
-import type { FrameworkType } from "@/components/website-builder"
 
+import type { FrameworkType } from "@/components/website-builder"
+export const maxDuration = 30
 export async function generateWebsite(prompt: string, framework: FrameworkType): Promise<string> {
   try {
     const promptTemplate = getPromptTemplate(framework)
 console.log("The current server time is "+((new Date()).toDateString()))
     const { text } = await generateText({
-      model: openai("gpt-4o"),
+      model: 'openai/gpt-oss-120b',
       system: "The current server time is "+((new Date()).toDateString()),
       prompt: promptTemplate.replace("{PROMPT}", prompt),
       temperature: 0.7,
-      maxTokens: 4000,
     })
 
     return text

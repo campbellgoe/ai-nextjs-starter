@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -8,9 +8,9 @@ import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, AlertTriangle, ShieldAlert, Wrench } from "lucide-react"
 import { CodeBlock } from "@/components/code-block"
-import { readStreamableValue } from 'ai/rsc';
-import { generateCodeAnalysis } from "@/app/actions/actions"
+import { experimental_useObject } from "@ai-sdk/react"
 
+// TODO: generate langauges from ai llm
 const LANGUAGES = [
   { value: "javascript", label: "JavaScript" },
   { value: "typescript", label: "TypeScript" },
@@ -60,20 +60,29 @@ export function CodeAnalyzer() {
   const [activeTab, setActiveTab] = useState("bugs")
   // const [reports, setReports] = useState(new Map())
   // const [selectedReport, setSelectedReport] = useState('')
+  // 
+  const { isLoading, object: aiCodeAnalysisResult, submit: aiSubmit, error } = experimental_useObject({
+    api: '/api/code-analysis',
+    schema: analysisResultSchema,
+  });
+
   const handleGenerateCodeAnalysis = async (code: string, language: string) => {
     setIsAnalyzing(true);
-    const { data } = await generateCodeAnalysis(code, language);
-
-    for await (const partialObject of readStreamableValue(data)) {
-      if (partialObject && partialObject.report) {
-        setResult(pr => ({...(pr || {}), ...partialObject.report}))
-      }
-    }
+    aiSubmit({ code, language })
+    // const codeAnalysisResult = await generateCodeAnalysis(code, language);
+    // for await (const partialObject of readStreamableValue(data)) {
+    //   if (partialObject && partialObject.report) {
+        
+    //   }
+    // }
     // setSelectedReport(code+language);
     // setResults(Array.from(reports))
     // setResult(Array.from(reports)?.[0]?.[0])
     setIsAnalyzing(false);
   };
+  useEffect(() => {
+    setResult(pr => ({...(pr || {}), ...aiCodeAnalysisResult.report}))
+  }, [aiCodeAnalysisResult])
   const handleAnalyze = async () => {
     if (!code.trim()) return
     await handleGenerateCodeAnalysis(code.trim(), language )

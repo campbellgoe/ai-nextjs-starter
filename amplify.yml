@@ -1,0 +1,28 @@
+version: 1
+backend:
+  phases:
+    preBuild:
+      commands:
+        - corepack enable
+    build:
+      commands:
+        - pnpm install --frozen-lockfile
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - corepack enable
+        - pnpm install
+    build:
+      commands:
+        - echo "AI_GATEWAY_API_KEY=$AI_GATEWAY_API_KEY" >> .env
+        - pnpm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+  # cache:
+  #   paths:
+  #     - node_modules/**/*
+  #     - .next/cache/**/*
