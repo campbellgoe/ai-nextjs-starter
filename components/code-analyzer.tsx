@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, AlertTriangle, ShieldAlert, Wrench } from "lucide-react"
 import { CodeBlock } from "@/components/code-block"
 import { experimental_useObject } from "@ai-sdk/react"
+import { analysisResultSchema } from "@/schemas/codeAnalysis"
 
 // TODO: generate langauges from ai llm
 const LANGUAGES = [

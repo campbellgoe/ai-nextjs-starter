@@ -1,7 +1,8 @@
 'use client';
-
-import { Message, useChat } from '@ai-sdk/react';
-import {  Suspense, useEffect, useState } from 'react';
+import { v4 as uuid } from "uuid"
+import { useChat } from '@ai-sdk/react';
+import { ModelMessage } from "ai";
+import {  ChangeEvent, FormEvent, Suspense, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import dynamic from 'next/dynamic';
@@ -24,7 +25,7 @@ MyMdx.displayName = 'MyMDX'
 export default function ChatPage() {
   // const _usage = useContextState(['usage', 'setUsage'])
   const [generating, setGenerating] = useState(false)
-  const { messages, setMessages, input, handleInputChange, handleSubmit } = useChat({maxSteps: 5, onFinish: (/*_message: Message, { usage, finishReason: _finishReason }*/) => {
+  const { messages, setMessages, sendMessage, status } = useChat({onFinish: (/*_message: Message, { usage, finishReason: _finishReason }*/) => {
       setGenerating(false)
       // setUsage(u => u + usage.totalTokens)
   }});
@@ -44,7 +45,16 @@ export default function ChatPage() {
       handler()
     }
   },[messages, setMessages])
-  
+  const [input, setInput] = useState("")
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }
+  const handleSubmit = (e: FormEvent) => {
+    sendMessage({
+      messageId: 'message-'+uuid(),
+      text: input
+    })
+  }
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="max-w-4xl mx-auto">
@@ -54,7 +64,7 @@ export default function ChatPage() {
         <CardContent> 
             {/* <pre>{JSON.stringify(messages, null, 2)}</pre> */}
         <div className="grid auto-rows-max grid-cols-12">
-            {messages.map(m => (
+            {messages.map((m: ModelMessage) => (
               <Card key={m.id} className={cn("mb-4", {
                 "justify-self-start": m.role === 'user',
                 "justify-self-end col-start-4": m.role === 'assistant' && !(expandedMessage === m.id),
@@ -64,10 +74,10 @@ export default function ChatPage() {
                 <CardHeader className="py-2">
                   <CardTitle className="text-sm font-medium">
                     {m.role?.charAt(0).toUpperCase() + m.role?.slice(1)} <Button className="mt-4" onClick={() => {
-                      const confirmed = confirm("Delete "+m.content.slice(0, 30)+"?")
+                      const confirmed = confirm("Delete "+m?.content.toString().slice(0, 30)+"?")
                       if(confirmed){
                         
-                        setMessages((messages: Message[]) => messages.filter(a => a.id != m.id))
+                        setMessages((messages: ModelMessage[]) => messages.filter(a => a.id != m.id))
                         
 
                       }
@@ -80,7 +90,7 @@ export default function ChatPage() {
                       <Suspense fallback={<pre>{m.content}</pre>}>
                         {!generating ? <MyMdx
                           markdown={m.content}
-                        /> : <pre>{m.content}</pre>}
+                        /> : <pre className='max-w-full w-5xl'>{m.content}</pre>}
                       </Suspense>
                     </div>
                   ) : (
@@ -110,7 +120,10 @@ export default function ChatPage() {
                 onChange={handleInputChange}
               />
               <Button type="submit" onClick={() => {
-                if(input) setGenerating(true)
+                if(status === "ready") {setGenerating(true)
+                } else {
+              alert("Not ready to send new messages, please wait.")
+                }
               }}>
                 Ask
               </Button>

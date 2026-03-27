@@ -1,40 +1,16 @@
+import { analysisResultSchema } from "@/schemas/codeAnalysis";
 import { Output, streamText } from "ai";
 import { z } from "zod";
 const GPT = 'gpt'
 const models = {
   [GPT]: 'openai/gpt-oss-120b',
 }
-// Define the schema for our analysis result
-export const analysisResultSchema = () => z.object({
-  report: z.object({
-    bugs: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-        severity: z.enum(["low", "medium", "high"]),
-      }),
-    ),
-    securityIssues: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-        severity: z.enum(["low", "medium", "high"]),
-      }),
-    ),
-    improvements: z.array(
-      z.object({
-        description: z.string(),
-        lineNumber: z.number().optional(),
-      }),
-    ),
-    fixedCode: z.string(),
-  })
-})
+
 
 export async function generateCodeAnalysis(code: string, language: string) {
     const textStream = streamText({
       model: models[GPT],
-      output: Output.object({ schema: analysisResultSchema() }),
+      output: Output.object({ schema: analysisResultSchema }),
       system: `You are an expert code analyzer. Analyze the provided code for bugs, security issues, and potential improvements.
       Be thorough but concise in your analysis. Focus on practical issues that would affect production code.
       For security issues, consider common vulnerabilities like injection attacks, authentication issues, etc.

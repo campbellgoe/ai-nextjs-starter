@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { generateLessons, generatePlaceholder } from '@/app/actions/actions';
-import { readStreamableValue } from 'ai/rsc';
+import { generatePlaceholder } from '@/app/actions/actions';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,13 +10,15 @@ import { Lesson, LessonsContent } from '@/components/LessonsContent';
 import { Label } from '@/components/ui/label';
 import { DiceButton } from '@/components/dice-button';
 import { getData, setData } from '@/contexts/datasource';
-import { Message } from 'ai';
+import { ModelMessage } from 'ai';
+import { experimental_useObject } from '@ai-sdk/react';
+import { lessonsChallengesSchema } from '@/schemas/codeChallenges';
 
 // Allow streaming responses up to 45 seconds
 export const maxDuration = 35;
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ModelMessage[]>([])
   const [selectedLessons, setSelectedLessons] = useState<string>('');
   const [messagesLocal, setMessagesLocal] = useState([])
   useEffect(() => {
@@ -29,54 +30,54 @@ export default function Chat() {
       setMessagesLocal(messages)
     })
   }, [selectedLessons])
-      const oldMessages: Message[] = useMemo(() => {
-        try {
-          return messagesLocal
-        } catch(err){
-          console.warn(err)
-          return []
-        }
-      }, [messagesLocal])
+  const oldMessages: ModelMessage[] = useMemo(() => {
+    try {
+      return messagesLocal
+    } catch (err) {
+      console.warn(err)
+      return []
+    }
+  }, [messagesLocal])
   const [input, setInput] = useState('')
 
   const [lessons, setLessons] = useState<Map<string, Lesson[]>>(new Map());
 
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptPlaceholder, setPlaceholder] = useState('Type any topic you want to learn')
   useEffect(() => {
-    if(selectedLessons) setInput(selectedLessons)
+    if (selectedLessons) setInput(selectedLessons)
   }, [selectedLessons])
   useEffect(() => {
     const handleSetStoredLessonsOnStartup = async () => {
       const storedLessons = await getData<[]>("lessons");
       if (Array.isArray(storedLessons)) {
         try {
-            setLessons(new Map(storedLessons));
+          setLessons(new Map(storedLessons));
         } catch (err) {
           console.warn("Couldn't parse stored lessons", err);
         }
       }
     }
     handleSetStoredLessonsOnStartup()
-   
+
     return () => {
       // on exit
       const handleSetStoredLessonsOnExit = async () => {
         const existing: [] | null = await getData("lessons")
-        if(existing && lessons.size > existing.length) {
+        if (existing && lessons.size > existing.length) {
           await setData("lessons", JSON.stringify(Array.from(lessons.entries())));
         }
       }
       handleSetStoredLessonsOnExit()
     }
-  } , [])
-  const isUser = (message: Message) => message.role === 'user'
+  }, [])
+  const isUser = (message: ModelMessage) => message.role === 'user'
   useEffect(() => {
-    if(oldMessages.length && messages.length < oldMessages.length){
+    if (oldMessages.length && messages.length < oldMessages.length) {
       setMessages(oldMessages)
-      if(oldMessages[oldMessages.length - 1].content.length){
-        setPlaceholder(oldMessages.findLast(isUser)?.content || '')
+      if (oldMessages[oldMessages.length - 1].content.length) {
+        setPlaceholder((oldMessages.findLast(isUser)?.content.toString()) || '')
         // console.log(oldMessages.findLast(isUser))
       }
     }
@@ -87,31 +88,38 @@ export default function Chat() {
       setData("lessons", Array.from(lessons.entries()));
     }
   }, [lessons, isGenerating]);
-const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().filter((_, i) => i === 0).map(([Key]) => Key)][0] : '', [lessons])
+  const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().filter((_, i) => i === 0).map(([Key]) => Key)][0] : '', [lessons])
   useEffect(() => {
-    if(!selectedLessons || !lessons.has(selectedLessons)){
+    if (!selectedLessons || !lessons.has(selectedLessons)) {
       setSelectedLessons(firstLessonKey)
     }
   }, [lessons, selectedLessons, firstLessonKey])
-  const lessonsData: Lesson[]= useMemo(() => (lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') : []) || [], [lessons, selectedLessons])
+  const lessonsData: Lesson[] = useMemo(() => (lessons.has(selectedLessons || '') ? lessons.get(selectedLessons || '') : []) || [], [lessons, selectedLessons])
+  const { isLoading, object: aiLessons, submit: aiSubmit, error } = experimental_useObject({
+    api: '/api/code-challenges',
+    schema: lessonsChallengesSchema,
+  });
   const handleGenerateLessons = async (prompt: string) => {
     setIsGenerating(true);
-    const { data } = await generateLessons(prompt);
+    await aiSubmit(prompt);
 
-    for await (const partialObject of readStreamableValue(data)) {
-      if (partialObject && partialObject.lessons) {
-        const newLessons = [...lessonsData, ...partialObject.lessons]
-        setLessons(prevLessons => {
-          const updatedLessons = new Map(prevLessons);
-          updatedLessons.set(prompt, newLessons);
-          return updatedLessons;
-        });
-      }
-    }
-        setSelectedLessons(prompt);
-    
+    // for await (const partialObject of readStreamableValue(data)) {
+    //   if (partialObject && partialObject.lessons) {
+
+    //   }
+    // }
+    setSelectedLessons(prompt);
+
     setIsGenerating(false);
   };
+  useEffect(() => {
+    const newLessons = [...lessonsData, ...aiLessons.lessons]
+    setLessons(prevLessons => {
+      const updatedLessons = new Map(prevLessons);
+      updatedLessons.set(prompt, newLessons);
+      return updatedLessons;
+    });
+  }, [aiLessons])
   const handleGenerateMoreLessons = async (prompt: string = "") => {
     return await handleGenerateLessons(prompt)
   }
@@ -136,17 +144,17 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
             <Label htmlFor="topic">What topic do you want to learn?</Label>
             <div className="flex flex-row">
               <DiceButton onClick={async () => {
-                 try {
+                try {
                   const messagesLocal = await getData("messages") || []
-                
+
 
                   generatePlaceholder(input, Array.isArray(messagesLocal) ? messagesLocal : []).then(val => {
                     setPlaceholder(val)
                     setInput(val)
                   })
-              } catch(err){
-                console.warn(err)
-              }
+                } catch (err) {
+                  console.warn(err)
+                }
               }} />
               <Input
                 id="topic"
@@ -156,13 +164,13 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const v = e.target.value
                   setInput(v)
-                  if(v === ' ' || v === '   '){
+                  if (v === ' ' || v === '   ') {
                     setInput(promptPlaceholder)
                   }
                 }}
               />
             </div>
-            <Button 
+            <Button
               onClick={() => {
                 handleGenerateLessons(input)
                 setOffsetIndex(lessonsData.length)
@@ -172,7 +180,7 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
               {isGenerating ? 'Generating...' : 'Generate Challenges'}
             </Button>
           </div>
-          
+
           {/* {selectedLessons && <Button className="mb-4" onClick={() => setSelectedLessons(null)}>Deselect</Button>} */}
           {/* Select input for choosing a lesson */}
           {/* {lessons.size > 0 && (
@@ -196,34 +204,34 @@ const firstLessonKey = useMemo(() => lessons.size > 0 ? [...lessons.entries().fi
               </Select>
             </div>
           )} */}
-          
-           
+
+
           {!isGenerating && selectedLessons && <><Button className="mb-4" onClick={() => {
-            const confirmed = confirm("Delete "+input+"?")
-            if(confirmed) removeLesson(input)
+            const confirmed = confirm("Delete " + input + "?")
+            if (confirmed) removeLesson(input)
           }}>
             Delete
           </Button>{" "}<span>{input}</span></>}
           <Card className="bg-gray-50">
             <CardContent>
               {!!(lessonsData.length && offsetIndex > 0) && <Button onClick={() => {
-setOffsetIndex(i => i-1)
-          }}>
-            {"<-"}
-          </Button>}
-          {!!(lessonsData.length && offsetIndex < lessonsData.length-1) && <Button className="float-right" onClick={() => {
-            setOffsetIndex(i => i+1)
-          }}>
-            {"->"}
-          </Button>}
+                setOffsetIndex(i => i - 1)
+              }}>
+                {"<-"}
+              </Button>}
+              {!!(lessonsData.length && offsetIndex < lessonsData.length - 1) && <Button className="float-right" onClick={() => {
+                setOffsetIndex(i => i + 1)
+              }}>
+                {"->"}
+              </Button>}
               {selectedLessons && lessonsData && (
                 <LessonsContent offsetIndex={offsetIndex} isGenerating={isGenerating} lessonsData={lessonsData} generateMoreChallenges={() => {
                   // const prompt = `${input}. Previous challenge: ${existingChallenges.map((challenge: Challenge) => challenge.challenge).join(", ")}`
-handleGenerateMoreLessons(input)
-setOffsetIndex(lessonsData.length)
+                  handleGenerateMoreLessons(input)
+                  setOffsetIndex(lessonsData.length)
                 }} />
               )}
-              
+
             </CardContent>
           </Card>
         </CardContent>
