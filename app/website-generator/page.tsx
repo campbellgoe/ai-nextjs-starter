@@ -1,5 +1,5 @@
 import { WebsiteBuilder } from '@/components/website-builder'
-import React from 'react'
+// import React from 'react'
 
 function WebsiteGeneratorPage() {
   return <div className="container mx-auto px-4 py-8">

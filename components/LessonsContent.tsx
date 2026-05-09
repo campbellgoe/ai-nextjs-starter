@@ -8,7 +8,7 @@ import 'prismjs/components/prism-clike';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/themes/prism.css'; //Example style, you can use another
 import confetti from 'canvas-confetti'
-import { generateCorrectness } from "@/app/actions/actions";
+import { generateCorrectness } from "@/actions/actions";
 import { Label } from "./ui/label";
 import { useAppContext } from "@/contexts/AppContext";
 import { getData, setData } from "@/contexts/datasource";
@@ -143,10 +143,10 @@ console.warn(err)
   const handleGenerateCorrectness = async (input: string) => {
     const correctnessKey = input
     setIsGeneratingCorrectness(true);
-    const object = await generateCorrectness(input);
+    const object = (await generateCorrectness(input)) as { correctness: null; message: string; error: unknown; }
     setCorrectness(correctness => {
       const correctness2 = correctness
-      correctness2.set(correctnessKey, {...correctness2.get(correctnessKey), ...object.correctness})
+      correctness2.set(correctnessKey, {...correctness2.get(correctnessKey), ...(!!object.correctness ? object.correctness : {})})
       return new Map(correctness2)
     })
     setIsGeneratingCorrectness(false);

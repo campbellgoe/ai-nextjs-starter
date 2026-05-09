@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { generatePlaceholder } from '@/app/actions/actions';
+import { generatePlaceholder } from '@/actions/actions';
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -99,8 +99,12 @@ export default function Chat() {
     api: '/api/code-challenges',
     schema: lessonsChallengesSchema,
   });
+  const [promptKeys, setPromptKeys] = useState(new Set())
   const handleGenerateLessons = async (prompt: string) => {
     setIsGenerating(true);
+    setPromptKeys(keys => {
+      return new Set([...keys, prompt])
+    })
     await aiSubmit(prompt);
 
     // for await (const partialObject of readStreamableValue(data)) {
@@ -113,13 +117,15 @@ export default function Chat() {
     setIsGenerating(false);
   };
   useEffect(() => {
-    const newLessons = [...lessonsData, ...aiLessons.lessons]
+    if(!isLoading){
+    const newLessons = [...lessonsData, ...(aiLessons?.lessons || [])]
     setLessons(prevLessons => {
       const updatedLessons = new Map(prevLessons);
-      updatedLessons.set(prompt, newLessons);
+      updatedLessons.set(input || "", newLessons as Lesson[]);
       return updatedLessons;
     });
-  }, [aiLessons])
+  }
+  }, [isLoading])
   const handleGenerateMoreLessons = async (prompt: string = "") => {
     return await handleGenerateLessons(prompt)
   }

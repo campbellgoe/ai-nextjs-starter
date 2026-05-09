@@ -3,7 +3,7 @@
 import { generateText } from "ai"
 
 import type { FrameworkType } from "@/components/website-builder"
-export const maxDuration = 30
+// export const maxDuration = 30
 export async function generateWebsite(prompt: string, framework: FrameworkType): Promise<string> {
   try {
     const promptTemplate = getPromptTemplate(framework)

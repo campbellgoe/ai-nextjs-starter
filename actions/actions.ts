@@ -117,7 +117,7 @@ export async function generatePlaceholder(input: string | undefined, messages?: 
     temperature: 0.7,
     messages: [
       ...(messages || []),
-      { role: 'system', content: 'You genarate placeholder text for a prompt input. Generate a short, specific questionOrChallenge that would be interesting to learn about. Your response should be 5-10 words long. Use the programming language in the prompt e.g. {questionOrChallenge} in {language} (if given a coding questionOrChallenge or langauge)' },
+      { role: 'system', content: 'You genarate placeholder text for a prompt input. Generate a short, specific questionOrChallenge that would be interesting to learn about. Your response should be 5-10 words long. Use the language in the prompt e.g. {questionOrChallenge} in {language}' },
       { role: 'user', content: (input || '') }
     ],
   });

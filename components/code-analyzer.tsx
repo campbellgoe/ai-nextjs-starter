@@ -69,7 +69,7 @@ export function CodeAnalyzer() {
 
   const handleGenerateCodeAnalysis = async (code: string, language: string) => {
     setIsAnalyzing(true);
-    aiSubmit({ code, language })
+    await aiSubmit({ code, language })
     // const codeAnalysisResult = await generateCodeAnalysis(code, language);
     // for await (const partialObject of readStreamableValue(data)) {
     //   if (partialObject && partialObject.report) {
@@ -82,7 +82,7 @@ export function CodeAnalyzer() {
     setIsAnalyzing(false);
   };
   useEffect(() => {
-    setResult(pr => ({...(pr || {}), ...aiCodeAnalysisResult.report}))
+    setResult(pr => ({...(pr || {}), ...aiCodeAnalysisResult}))
   }, [aiCodeAnalysisResult])
   const handleAnalyze = async () => {
     if (!code.trim()) return
